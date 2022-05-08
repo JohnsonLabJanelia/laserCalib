@@ -76,3 +76,9 @@ cameraArray[6, 6:9] = [1777.777, -0.015, -0.015]
 cameraArray[6, 9:] = [1608, 1100]
 
 print("cameraArray: ", cameraArray)
+
+
+# prepare points_3d variable (initializing with 2d laser points in image space on cam0)
+points_3d = np.zeros(shape=(nPts, 3))
+points_3d[:, :2] = pts[:,:,0].copy()
+print("points_3d: ", points_3d)
