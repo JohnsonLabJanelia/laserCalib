@@ -21,15 +21,6 @@ with np.load('good_centroids.npz') as data:
 nPts = pts.shape[0]
 nCams = pts.shape[2]
 
-fig, axs = plt.subplots(1, nCams, sharey=True)
-
-for i in range(nCams):
-    colors = np.linspace(0, 1, nPts)
-    axs[i].scatter(pts[:,0,i], pts[:,1,i], s=10, c=colors, alpha=0.5)
-    axs[i].title.set_text('cam' + str(i))
-
-plt.show()
-
 # load camera data for pySBA
 cameraArray = np.zeros(shape=(nCams, 11))
 
@@ -82,3 +73,59 @@ print("cameraArray: ", cameraArray)
 points_3d = np.zeros(shape=(nPts, 3))
 points_3d[:, :2] = pts[:,:,0].copy()
 print("points_3d: ", points_3d)
+
+# center the world points
+points_3d[:,0] = points_3d[:,0] - 1604
+points_3d[:,1] = points_3d[:,1] - 1100
+# should we mirror flip the y-axis of these points to correspond to label4d?
+points_3d[:,1] = -points_3d[:,1]
+
+
+fig, axs = plt.subplots(1, nCams, sharey=True)
+for i in range(nCams):
+    colors = np.linspace(0, 1, nPts)
+    axs[i].scatter(pts[:,0,i], pts[:,1,i], s=10, c=colors, alpha=0.5)
+    axs[i].title.set_text('cam' + str(i))
+    axs[i].invert_yaxis()
+plt.show()
+
+# create camera_ind variable
+camera_ind = np.zeros(shape=(nPts*nCams,), dtype=int)
+point_ind = np.zeros(shape=(nPts*nCams,), dtype=int)
+points_2d = np.zeros(shape=(nPts*nCams, 2), dtype=float)
+for i in range(nCams):
+    for j in range(nPts):
+        ind = (i*nPts) + j
+        camera_ind[ind] = i
+        point_ind[ind] = j
+        points_2d[ind, :] = pts[j, :, i].copy()
+
+
+"""
+initialize the SBA object with points and calibration (using an old calibration or just general ballpark calculated manually). 
+Then optimize for the 3d positions holding all camera parameters fixed
+"""
+sba = pySBA.PySBA(cameraArray, points_3d, points_2d, camera_ind, point_ind)
+sba.bundleAdjust_nocam()
+r = sba.project(sba.points3D[sba.point2DIndices], sba.cameraArray[sba.cameraIndices]) - sba.points2D
+r = np.sqrt(np.sum(r**2, axis=1))
+plt.hist(r[r<np.percentile(r, 99)])
+plt.xlabel('Reprojection Error')
+plt.title('no adjustment')
+plt.show()
+
+"""
+Given the updated 3d positions jointly optimize the camera parameters and 3d positions to minimize reconstruction errors.  
+Use sba.bundleAdjust() if you want each camera to have separate intrinsics.
+sba.bundleAdjust_sharedcam() uses shared intrinsics but with different image centroids used for radial distortion.
+"""
+
+sba.bundleAdjust_sharedcam()
+# sba.bundleAdjust()
+optCamArray = sba.cameraArray.copy()
+r = sba.project(sba.points3D[sba.point2DIndices], sba.cameraArray[sba.cameraIndices]) - sba.points2D
+r = np.sqrt(np.sum(r**2, axis=1))
+plt.hist(r[r<np.percentile(r, 99)])
+plt.xlabel('Reprojection Error')
+plt.title('shared Intrinsics')
+plt.show()
