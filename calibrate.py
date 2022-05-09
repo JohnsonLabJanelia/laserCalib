@@ -114,6 +114,14 @@ plt.xlabel('Reprojection Error')
 plt.title('no adjustment')
 plt.show()
 
+
+from prettytable import PrettyTable
+x = PrettyTable()
+for row in sba.cameraArray:
+    x.add_row(row)
+
+print(x)
+
 """
 Given the updated 3d positions jointly optimize the camera parameters and 3d positions to minimize reconstruction errors.  
 Use sba.bundleAdjust() if you want each camera to have separate intrinsics.
@@ -129,3 +137,11 @@ plt.hist(r[r<np.percentile(r, 99)])
 plt.xlabel('Reprojection Error')
 plt.title('shared Intrinsics')
 plt.show()
+
+
+from prettytable import PrettyTable
+x = PrettyTable()
+for row in sba.cameraArray:
+    x.add_row(row)
+
+print(x)
