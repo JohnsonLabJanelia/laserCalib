@@ -14,9 +14,16 @@ from skimage import filters
 from os import listdir, walk
 from os.path import isfile, isdir, join
 
+from scipy.spatial.transform import Rotation as R
+
+from util.my_cam_pose_visualizer import MyCamPoseVisualizer
+
 # load laser pointer point centroids found on all cameras
 with np.load('good_centroids.npz') as data:
     pts = data['arr_0']
+
+# flip xy (regionprops orders)
+pts = np.flip(pts, axis=1)
 
 nPts = pts.shape[0]
 nCams = pts.shape[2]
@@ -66,22 +73,17 @@ cameraArray[6, 3:6] = [190.82062, -295.33585, 2283.1584]
 cameraArray[6, 6:9] = [1777.777, -0.015, -0.015]
 cameraArray[6, 9:] = [1604, 1100]
 
-print("cameraArray: ", cameraArray)
-
 
 # prepare points_3d variable (initializing with 2d laser points in image space on cam0)
 points_3d = np.zeros(shape=(nPts, 3))
 points_3d[:, :2] = pts[:,:,0].copy()
-print("points_3d: ", points_3d)
 
 # center the world points
 points_3d[:,0] = points_3d[:,0] - 1604
 points_3d[:,1] = points_3d[:,1] - 1100
-# should we mirror flip the y-axis of these points to correspond to label4d?
-# points_3d[:,1] = -points_3d[:,1]
-
 
 fig, axs = plt.subplots(1, nCams, sharey=True)
+plt.title('2D points found on all cameras')
 for i in range(nCams):
     colors = np.linspace(0, 1, nPts)
     axs[i].scatter(pts[:,0,i], pts[:,1,i], s=10, c=colors, alpha=0.5)
@@ -106,7 +108,39 @@ initialize the SBA object with points and calibration (using an old calibration 
 Then optimize for the 3d positions holding all camera parameters fixed
 """
 sba = pySBA.PySBA(cameraArray, points_3d, points_2d, camera_ind, point_ind)
+
+from prettytable import PrettyTable
+x = PrettyTable()
+for row in sba.cameraArray:
+    x.add_row(row)
+print(x)
+
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+ax.scatter(sba.points3D[:,0], sba.points3D[:,1], sba.points3D[:,2])
+ax.set_xlabel('X Label')
+ax.set_ylabel('Y Label')
+ax.set_zlabel('Z Label')
+plt.title('initial cam params and 3D points')
+for i in range(nCams):
+    r = R.from_rotvec(sba.cameraArray[i, :3])
+    #r = R.from_rotvec(sba.cameraArray[i, :3]).inv()
+    ex = np.eye(4)
+    ex[:3,:3] = r.as_matrix().copy()
+    ex[:3,3] = sba.cameraArray[i,3:6].copy()
+    visualizer = MyCamPoseVisualizer(fig, ax)
+    visualizer.extrinsic2pyramid(ex, 'c', 200)
+plt.show()
+
+
 sba.bundleAdjust_nocam()
+
+from prettytable import PrettyTable
+x = PrettyTable()
+for row in sba.cameraArray:
+    x.add_row(row)
+print(x)
+
 r = sba.project(sba.points3D[sba.point2DIndices], sba.cameraArray[sba.cameraIndices]) - sba.points2D
 r = np.sqrt(np.sum(r**2, axis=1))
 plt.hist(r[r<np.percentile(r, 99)])
@@ -120,14 +154,16 @@ ax.scatter(sba.points3D[:,0], sba.points3D[:,1], sba.points3D[:,2])
 ax.set_xlabel('X Label')
 ax.set_ylabel('Y Label')
 ax.set_zlabel('Z Label')
+plt.title('cam params held; fit 3D points')
+for i in range(nCams):
+    r = R.from_rotvec(sba.cameraArray[i, :3])
+    ex = np.eye(4)
+    ex[:3,:3] = r.as_matrix().copy()
+    ex[:3,3] = sba.cameraArray[i,3:6].copy()
+    visualizer = MyCamPoseVisualizer(fig, ax)
+    visualizer.extrinsic2pyramid(ex, 'c', 200)
 plt.show()
 
-from prettytable import PrettyTable
-x = PrettyTable()
-for row in sba.cameraArray:
-    x.add_row(row)
-
-print(x)
 
 """
 Given the updated 3d positions jointly optimize the camera parameters and 3d positions to minimize reconstruction errors.  
@@ -137,7 +173,12 @@ sba.bundleAdjust_sharedcam() uses shared intrinsics but with different image cen
 
 sba.bundleAdjust_sharedcam()
 # sba.bundleAdjust()
-optCamArray = sba.cameraArray.copy()
+from prettytable import PrettyTable
+x = PrettyTable()
+for row in sba.cameraArray:
+    x.add_row(row)
+print(x)
+
 r = sba.project(sba.points3D[sba.point2DIndices], sba.cameraArray[sba.cameraIndices]) - sba.points2D
 r = np.sqrt(np.sum(r**2, axis=1))
 plt.hist(r[r<np.percentile(r, 99)])
@@ -146,18 +187,20 @@ plt.title('shared Intrinsics')
 plt.show()
 
 
-from prettytable import PrettyTable
-x = PrettyTable()
-for row in sba.cameraArray:
-    x.add_row(row)
-
-print(x)
-
 fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
 ax.scatter(sba.points3D[:,0], sba.points3D[:,1], sba.points3D[:,2])
 ax.set_xlabel('X Label')
 ax.set_ylabel('Y Label')
 ax.set_zlabel('Z Label')
+
+for i in range(nCams):
+    r = R.from_rotvec(sba.cameraArray[i, :3])
+    ex = np.eye(4)
+    ex[:3,:3] = r.as_matrix().copy()
+    ex[:3,3] = sba.cameraArray[i,3:6].copy()
+    visualizer = MyCamPoseVisualizer(fig, ax)
+    visualizer.extrinsic2pyramid(ex, 'c', 200)
+
 plt.show()
 
