@@ -206,8 +206,8 @@ plt.show()
 
 # sba.saveCamVecs()
 
-import pickle
-picklefile = open('sba_data', 'wb')
-pickle.dump(sba, picklefile)
-picklefile.close()
+# import pickle
+# picklefile = open('sba_data', 'wb')
+# pickle.dump(sba, picklefile)
+# picklefile.close()
 

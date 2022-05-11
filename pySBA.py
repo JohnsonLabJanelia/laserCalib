@@ -290,7 +290,7 @@ def convertParams(camParams):
     return allParams
 
 def unconvertParams(camParamVec):
-    thisK = np.full((3, 3), 0)
+    thisK = np.full((3, 3), 0.0)
     thisK[0, 0] = camParamVec[6]
     thisK[1,1] = camParamVec[6]
     thisK[2,2] = 1
@@ -316,19 +316,4 @@ def getCameraArray(allCameras = ['lBack', 'lFront', 'lTop', 'rBack', 'rFront', '
         cameraArray[i,:] = camMatDict[e]
     return cameraArray
 
-def getMyCameraArray(allCameras = ['cam0', 'cam1', 'cam2', 'cam3', 'cam4', 'cam5', 'cam6']):
-    # Camera parameters are 3 rotation angles, 3 translations, 1 focal distance, 2 distortion params, and x,y principal points
-    # Following notes outlined in evernote, 'bundle adjustment', later updated using optimized values
-    camMatDict = {
-        'lBack': np.array([0.86, -1.95, 1.69, 0.012, 0.091, 1.38, 1779, -0.021, -0.026, 1408, 704]),
-        'lFront': np.array([1.96, -.66, .72, -0.039, .068, 1.40, 1779, -0.021, -0.026, 1408, 704]),
-        'lTop': np.array([1.92, -1.77, 0.84, -.038, 0.039, 1.69, 1779, -0.021, -0.026, 1408, 848]),
-        'rBack': np.array([0.96, 2.14, -1.67, 0.035, 0.077, 1.42, 1779, -0.021, -0.026, 1408, 704]),
-        'rFront': np.array([1.966, .84, -.64, 0.056, 0.1399, 1.48, 1779, -0.021, -0.026, 1408, 704]),
-        'rTop': np.array([2.02, 1.95, -0.71, 0.0377, 0.0047, 1.74, 1779, -0.021, -0.026, 1408, 848]),
-    }
-    cameraArray = np.full((len(allCameras), 11), np.NaN)
-    for i, e in enumerate(allCameras):
-        cameraArray[i,:] = camMatDict[e]
-    return cameraArray
 
