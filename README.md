@@ -20,3 +20,5 @@ about 20 minutes to run the centroid extraction
 
 ## Reference 
 The library is built on pySBA -- Python Bundle Adjustment library: https://github.com/jahdiel/pySBA
+
+Camera visulaizer -- https://github.com/demul/extrinsic2pyramid
