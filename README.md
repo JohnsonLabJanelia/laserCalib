@@ -12,6 +12,7 @@ conda install -c anaconda scipy
 conda install -c conda-forge matplotlib 
 conda install scikit-image
 conda install -c menpo opencv
+conda install seaborn
 python -m pip install -U prettytable
 ```
 ## TODO 
