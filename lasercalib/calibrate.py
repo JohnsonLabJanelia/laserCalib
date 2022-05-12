@@ -106,7 +106,7 @@ print(x)
 
 
 
-
+# TODO: fix all the plots 
 fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
 ax.scatter(sba.points3D[:,0], sba.points3D[:,1], sba.points3D[:,2])
