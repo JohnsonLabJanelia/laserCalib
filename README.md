@@ -29,17 +29,17 @@ python -m pip install -U prettytable
 6. Run the `organizeCalibData.py` script. Edit the script as necessary to save out your calibration parameters.
 
 ## Example of a suitable input image  
-![suitable_input_image](images/suitable_input_image.png)  
+![suitable_input_image](README_images/suitable_input_image.png)  
 
 
 ## Example of an unsuitable input image  
 In the image below, note that the Universal Robots tablets on the right side have green power buttons that are visible in the image. This can be a problem for easily locating the green laser pointer spot. In this release, the laser-pointer detection algorithm implements a distance threshold such that any contours found more than 1500 pixels away from the image center are excluded. To map the entire camera space, please take suitable images and remove this distance constraint from the code (see centroid_extraction.py).
-![unsuitable_input_image](images/unsuitable_input_image.png)  
+![unsuitable_input_image](README_images/unsuitable_input_image.png)  
 
 
 ## Example of calibrated cameras and extracted laser points in world space  
 This is a suitable image. The green laser pointer is the brightest and largest green spot in the image. Good job.
-![laser_points_and_cam_positions](images/laser_points_and_cam_positions.png)  
+![laser_points_and_cam_positions](README_images/laser_points_and_cam_positions.png)  
 
 
 ## TODO  
