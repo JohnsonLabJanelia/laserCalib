@@ -29,7 +29,7 @@ python -m pip install -U prettytable
 6. Run the `organizeCalibData.py` script. Edit the script as necessary to save out your calibration parameters.  
 
 ## Example of a suitable input image  
-In the image below, the green laser pointer point is the brightest and largest green object. This is what you want.  
+This is a suitable image. The green laser pointer is the brightest and largest green spot in the image. Good job.   
 ![suitable_input_image](README_images/suitable_input_image.png)  
 
 
@@ -39,7 +39,6 @@ In the image below, note that the Universal Robots tablets on the right side hav
 
 
 ## Example of calibrated cameras and extracted laser points in world space  
-This is a suitable image. The green laser pointer is the brightest and largest green spot in the image. Good job.  
 ![laser_points_and_cam_positions](README_images/laser_points_and_cam_positions.png)  
 
 
