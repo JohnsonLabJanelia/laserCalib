@@ -5,6 +5,7 @@ import pySBA
 import matplotlib.pyplot as plt
 from my_cam_pose_visualizer import MyCamPoseVisualizer
 import seaborn as sns
+import pickle
 
 
 my_palette = sns.color_palette()
@@ -105,8 +106,6 @@ for row in sba.cameraArray:
 print(x)
 
 
-
-# TODO: fix all the plots 
 fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
 ax.scatter(sba.points3D[:,0], sba.points3D[:,1], sba.points3D[:,2])
@@ -117,21 +116,16 @@ plt.title('initial cam params and 3D points')
 for i in range(nCams):
     r_f = R.from_rotvec(-sba.cameraArray[i, 0:3]).as_matrix().copy()
     t_f = sba.cameraArray[i, 3:6].copy()
-    
     # get inverse transformation
     r_inv = r_f.T    
     t_inv = -np.matmul(r_f, t_f)    
-    
     ex = np.eye(4)
     ex[:3,:3] = r_inv.T
     ex[:3,3] = t_inv
-
     visualizer = MyCamPoseVisualizer(fig, ax)
     visualizer.extrinsic2pyramid(ex, my_palette[i], 200)
 plt.show()
 
-
-import pdb; pdb.set_trace()
 
 sba.bundleAdjust_nocam()
 
@@ -155,12 +149,16 @@ ax.set_ylabel('Y Label')
 ax.set_zlabel('Z Label')
 plt.title('cam params held; fit 3D points')
 for i in range(nCams):
-    r = R.from_rotvec(sba.cameraArray[i, :3])
+    r_f = R.from_rotvec(-sba.cameraArray[i, 0:3]).as_matrix().copy()
+    t_f = sba.cameraArray[i, 3:6].copy()
+    # get inverse transformation
+    r_inv = r_f.T    
+    t_inv = -np.matmul(r_f, t_f)    
     ex = np.eye(4)
-    ex[:3,:3] = r.as_matrix().copy()
-    ex[:3,3] = sba.cameraArray[i,3:6].copy()
+    ex[:3,:3] = r_inv.T
+    ex[:3,3] = t_inv
     visualizer = MyCamPoseVisualizer(fig, ax)
-    visualizer.extrinsic2pyramid(ex, 'c', 200)
+    visualizer.extrinsic2pyramid(ex, my_palette[i], 200)
 plt.show()
 
 
@@ -193,20 +191,24 @@ ax.set_ylabel('Y Label')
 ax.set_zlabel('Z Label')
 
 for i in range(nCams):
-    r = R.from_rotvec(sba.cameraArray[i, :3])
+    r_f = R.from_rotvec(-sba.cameraArray[i, 0:3]).as_matrix().copy()
+    t_f = sba.cameraArray[i, 3:6].copy()
+    # get inverse transformation
+    r_inv = r_f.T    
+    t_inv = -np.matmul(r_f, t_f)    
     ex = np.eye(4)
-    ex[:3,:3] = r.as_matrix().copy()
-    ex[:3,3] = sba.cameraArray[i,3:6].copy()
+    ex[:3,:3] = r_inv.T
+    ex[:3,3] = t_inv
     visualizer = MyCamPoseVisualizer(fig, ax)
-    visualizer.extrinsic2pyramid(ex, 'c', 200)
-
+    visualizer.extrinsic2pyramid(ex, my_palette[i], 200)
 plt.show()
 
 # sba.saveCamVecs()
-
-import pickle
 picklefile = open('../calibres/sba_data', 'wb')
 pickle.dump(sba, picklefile)
 picklefile.close()
 
-np.savetxt('../calibres/calib0.csv', sba.cameraArray, delimiter=',')
+
+
+
+
