@@ -16,8 +16,8 @@ conda install seaborn
 python -m pip install -U prettytable
 ```
 ## TODO 
-- [] FFmpeg decoder 
-- [] about 20 minutes to run the centroid extraction, can be parallelized 
+- [ ] FFmpeg decoder 
+- [ ] about 20 minutes to run the centroid extraction, can be parallelized 
 
 ## Reference 
 The library is built on pySBA -- Python Bundle Adjustment library: https://github.com/jahdiel/pySBA
@@ -26,4 +26,4 @@ Camera visualizer -- https://github.com/demul/extrinsic2pyramid
 
 Scipy bundle adjustment cookbook: http://scipy-cookbook.readthedocs.io/items/bundle_adjustment.html
 
-FFmpeg 
+FFmpeg python wrapper: https://github.com/kkroening/ffmpeg-python 
