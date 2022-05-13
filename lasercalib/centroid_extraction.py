@@ -38,7 +38,7 @@ for folder in folders:
             ccKeep = []
             for cc in props:
                 dist = (((cc.centroid[0] - 1100) ** 2) + ((cc.centroid[1] - 1608) ** 2)) ** 0.5
-                if dist < 1500:
+                if dist < 1500:   # this was used to remove unwanted contours near the edge of the image (unsuitable images had a green power button in the shot)
                     ccKeep.append(cc)
 
             imgAreas = np.empty(shape=(len(ccKeep),))

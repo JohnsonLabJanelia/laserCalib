@@ -60,7 +60,7 @@ for i, cam in enumerate(camList):
     print('\n')
 
 
-# stack for saving out the 
+# stack for saving out the camera parameters
 
 allParams = np.full((len(camList), 17), np.NaN)
 for nCam in range(len(camList)):
