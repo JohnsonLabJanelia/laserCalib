@@ -69,7 +69,7 @@ cameraArray[6, 9:] = [1604, 1100]
 keep = np.zeros(shape=(nPts,), dtype=bool)
 for i in range(nPts):
     v = pts[i, 0, :]
-    if ((np.sum(~np.isnan(v)) >=5) and (~np.isnan(v[0]))):
+    if ((np.sum(~np.isnan(v)) >=3) and (~np.isnan(v[0]))):
         keep[i] = True
 
 inPts = pts[keep, :, :]
@@ -198,7 +198,7 @@ plt.show()
 # sba.bundleAdjust_sharedcam() uses shared intrinsics but with different image centroids used for radial distortion.
 # """
 
-sba.bundleAdjust()
+sba.bundleAdjust_sharedcam()
 # sba.bundleAdjust()
 x = PrettyTable()
 for row in sba.cameraArray:
@@ -235,7 +235,7 @@ for i in range(nCams):
     visualizer.extrinsic2pyramid(ex, my_palette[i], 200)
 plt.show()
 
-# sba.saveCamVecs()
+sba.saveCamVecs()
 picklefile = open('../calibres/sba_data_new', 'wb')
 pkl.dump(sba, picklefile)
 picklefile.close()
