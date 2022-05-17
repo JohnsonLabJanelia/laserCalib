@@ -235,7 +235,7 @@ for i in range(nCams):
     visualizer.extrinsic2pyramid(ex, my_palette[i], 200)
 plt.show()
 
-sba.saveCamVecs()
-picklefile = open('../calibres/sba_data_new', 'wb')
-pkl.dump(sba, picklefile)
-picklefile.close()
+# sba.saveCamVecs()
+# picklefile = open('../calibres/sba_data_new', 'wb')
+# pkl.dump(sba, picklefile)
+# picklefile.close()
