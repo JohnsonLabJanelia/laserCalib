@@ -11,7 +11,8 @@ from scipy.spatial.transform import Rotation as R
 
 my_palette = sns.color_palette()
 
-picklefile = open('../calibres/sba_data_new', 'rb')
+picklefile = open('../calibres/sba_data', 'rb')
+# picklefile = open('../calibres/sba_data_new', 'rb')
 sba = pickle.load(picklefile)
 picklefile.close()
 
@@ -43,13 +44,11 @@ for i in range(nCams):
 plt.show()
 
 
-
 camList = []
 for i in range(nCams):
     camList.append(pySBA.unconvertParams(sba.cameraArray[i,:]))
 
 pp = pprint.PrettyPrinter(indent=0)
-
 np.set_printoptions(precision=5)
 np.set_printoptions(suppress=True)
 
@@ -60,16 +59,26 @@ for i, cam in enumerate(camList):
     print('\n')
 
 
-# stack for saving out the camera parameters
-
-allParams = np.full((len(camList), 17), np.NaN)
+outParams = np.full((len(camList), 25), np.NaN)
 for nCam in range(len(camList)):
     p = camList[nCam]
-    f = p['K'][0,0]/2 + p['K'][1,1]/2
+    k = np.transpose(p['K']).ravel()
     r_m = np.transpose(p['R']).ravel()
     t = p['t']
-    c = p['K'][2,0:2]
-    d = p['d']
-    allParams[nCam,:] = np.hstack((r_m,t,f,d,c))
+    d = np.hstack((p['d'], np.array([0.0, 0.0])))
+    outParams[nCam,:] = np.hstack((k, r_m, t, d))
 
-np.savetxt('../calibres/calib_new.csv', allParams, delimiter=',')
+# stack for saving out the camera parameters
+# allParams = np.full((len(camList), 17), np.NaN)
+# for nCam in range(len(camList)):
+#     p = camList[nCam]
+#     f = p['K'][0,0]/2 + p['K'][1,1]/2
+#     r_m = np.transpose(p['R']).ravel()
+#     t = p['t']
+#     c = p['K'][2,0:2]
+#     d = p['d']
+#     allParams[nCam,:] = np.hstack((r_m,t,f,d,c))
+
+# np.savetxt('../calibres/calib_new.csv', allParams, delimiter=',')
+
+np.savetxt('../calibres/laser_cal_first_round.csv', outParams, delimiter=',', newline=',\n', fmt='%f')
