@@ -11,7 +11,7 @@ from scipy.spatial.transform import Rotation as R
 
 my_palette = sns.color_palette()
 
-picklefile = open('../calibres/sba_data', 'rb')
+picklefile = open('../calibres/sba_data_new', 'rb')
 # picklefile = open('../calibres/sba_data_new', 'rb')
 sba = pickle.load(picklefile)
 picklefile.close()
@@ -81,4 +81,4 @@ for nCam in range(len(camList)):
 
 # np.savetxt('../calibres/calib_new.csv', allParams, delimiter=',')
 
-np.savetxt('../calibres/laser_cal_first_round.csv', outParams, delimiter=',', newline=',\n', fmt='%f')
+np.savetxt('../calibres/laser_cal_second_round.csv', outParams, delimiter=',', newline=',\n', fmt='%f')
