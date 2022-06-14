@@ -11,7 +11,10 @@ import seaborn as sns
 
 my_palette = sns.color_palette()
 
-filename = 'centroids.pkl'
+
+filename = 'centroids_multithreaded.pkl'
+
+# filename = 'centroids.pkl'
 fileObject = open(filename, 'rb')
 pts = pkl.load(fileObject)
 fileObject.close()
