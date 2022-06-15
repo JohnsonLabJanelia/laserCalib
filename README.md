@@ -29,14 +29,8 @@ We are using Linux. You will need to install `ffmpeg` on your machine such that 
 6. Run the `save_cam_params.py` to save out your calibration parameters as a `.csv` file.   
 
 ## Example of a suitable input image  
-This is a suitable image. The green laser pointer is the brightest and largest green spot in the image. Good job.   
+This is a suitable image. The green laser pointer is the brightest and largest green spot in the image. Good job. As written, the program will reject laser pointer points that are >1300 pixels from the center of the image.   
 ![suitable_input_image](README_images/suitable_input_image.png)  
-
-
-## Example of an unsuitable input image  
-In the image below, note that the Universal Robots tablets on the right side have green power buttons that are visible in the image. This can be a problem for easily locating the green laser pointer spot. In this release, the laser-pointer detection algorithm implements a distance threshold such that any contours found more than 1500 pixels away from the image center are excluded. To map the entire camera space, please take suitable images and remove this distance constraint from the code (see centroid_extraction.py).  
-![unsuitable_input_image](README_images/unsuitable_input_image.png)  
-
 
 ## Example of calibrated cameras and extracted laser points in world space  
 ![laser_points_and_cam_positions](README_images/laser_points_and_cam_positions.png)  
