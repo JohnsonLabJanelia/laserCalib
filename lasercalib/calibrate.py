@@ -12,7 +12,7 @@ import seaborn as sns
 my_palette = sns.color_palette()
 
 
-filename = 'centroids_multithreaded.pkl'
+filename = 'centroids.pkl'
 
 # filename = 'centroids.pkl'
 fileObject = open(filename, 'rb')
@@ -238,7 +238,7 @@ for i in range(nCams):
     visualizer.extrinsic2pyramid(ex, my_palette[i], 200)
 plt.show()
 
-# sba.saveCamVecs()
-# picklefile = open('../calibres/sba_data_new', 'wb')
-# pkl.dump(sba, picklefile)
-# picklefile.close()
+sba.saveCamVecs()
+picklefile = open('../calibres/sba_data', 'wb')
+pkl.dump(sba, picklefile)
+picklefile.close()
