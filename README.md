@@ -15,18 +15,18 @@ conda install -c menpo opencv
 conda install seaborn
 python -m pip install -U prettytable
 ```
+We are using Linux. You will need to install `ffmpeg` on your machine such that the `ffmpeg` command works from the terminal.  
 
 ## Basic Workflow  
 *This is a work in progress*  
 1. Collect images  
 - Use syncrhonized cameras. Turn off all the lights in the rig. This code is currently written for calibrating color cameras. If you are using monochrome cameras, please adjust the centroid-finding code to accept single channel images. If using color cameras, please use a green laser pointer. If you'd rather use a blue or red laser pointer, please adjust the centroid-finding code to use the red or blue image channel (right now it is using the green channel to find the green laser pointer centroid in each image). Use short (~100-500 microsecond) camera exposures and low gain such that the only bright spot in the image is from the laser pointer. The goal is to collect several thousand images on each camera of the laser pointer spot. You can shine the spot onto the floor of the arena (see example below).  
 2. Place all the images from each camera in it's own directory. Place all these camera directories in a parent directory.  
-3. Run the `centroid_extraction.py` script to extract centroids from these images.  
-4. Run the `preprocessCentroids.py` script to find all the observations in which the laser pointer centroid was found on all cameras. This is not strictly necessary. The `pySBA` class can handle partial observations (e.g. the laser pointer spot was found on a subset of the cameras). We just used this selection criteria as a convenience.  
-5. Run the `calibrate.py` script. This will need to be edited for your specific setup.  
+3. Run the `find_laser_points.py` script to extract centroids from these images and save them to a `.pkl` file  
+5. Run `calibrate.py` to calibrate the cameras (edit to adjust for cam number, cam param initialization, and 3D point initialization.  
 - In our example, we have 7 cameras. We used a previous calibration to initialize the camera parameters for each camera. It is probably important to initialize these camera parameters in the ballpark of the expected output. These calibration parameters could be estimated from a previous calibration or from a drawing of the rig. We haven't tested this code for a situation in which no initial guess of the camera parameters is provided.   
 - You will also need to provide an initial guess of the 3D world coordinates for each laser pointer observation. We simply used the pixel location of the extracted laser pointer centroids from one of our cameras (the central ceiling camera; blue camera in image below).  
-6. Run the `organizeCalibData.py` script. Edit the script as necessary to save out your calibration parameters.  
+6. Run the `save_cam_params.py` to save out your calibration parameters as a `.csv` file.   
 
 ## Example of a suitable input image  
 This is a suitable image. The green laser pointer is the brightest and largest green spot in the image. Good job.   
