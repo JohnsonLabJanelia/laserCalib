@@ -12,7 +12,8 @@ import seaborn as sns
 my_palette = sns.color_palette()
 
 
-filename = 'centroids.pkl'
+# filename = 'centroids.pkl'
+filename = 'centroids_test.pkl'
 
 # filename = 'centroids.pkl'
 fileObject = open(filename, 'rb')
@@ -109,7 +110,6 @@ for i in range(nPts):
         ind += 1
 
 
-
 # prepare points_3d variable (initializing with 2d laser points in image space on cam0)
 points_3d = np.zeros(shape=(nPts, 3))
 for i in range(nPts):
@@ -202,7 +202,7 @@ plt.show()
 # """
 
 sba.bundleAdjust_sharedcam()
-# sba.bundleAdjust()
+
 x = PrettyTable()
 for row in sba.cameraArray:
     x.add_row(row)
@@ -239,6 +239,6 @@ for i in range(nCams):
 plt.show()
 
 sba.saveCamVecs()
-picklefile = open('../calibres/sba_data', 'wb')
+picklefile = open('../calibres/sba_data_test', 'wb')
 pkl.dump(sba, picklefile)
 picklefile.close()

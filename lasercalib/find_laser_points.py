@@ -91,7 +91,7 @@ class SingleMovieManager(threading.Thread):
         MOVIE_PATH = self.movie_path
         command = [ FFMPEG_BIN,
             '-i', MOVIE_PATH,
-            '-threads', str(6),
+            '-threads', str(8),
             '-f', 'image2pipe',
             '-pix_fmt', 'rgb24',
             '-vcodec', 'rawvideo', '-']
@@ -128,7 +128,7 @@ class SingleMovieManager(threading.Thread):
         fileObject.close()
 
     def start_centroid_threads(self):
-        n_threads = 6
+        n_threads = 8
         for i in range(n_threads):
             self.centroid_threads.append(CentroidFinder(self.root_dir, self.cam_name, i, self.q, self.centroids))
         
@@ -143,6 +143,8 @@ class SingleMovieManager(threading.Thread):
 
 
 ######## FIND CENTROIDS AND SAVE THEIR POSITIONS #########
+
+start_time = time.time()
 
 n_cams = 7
 
@@ -170,7 +172,6 @@ for thread in threadpool:
 for thread in threadpool:
     thread.join()
 
-
 results_dir = root_dir + "/results"
 res_files = [os.path.join(results_dir, f) for f in os.listdir(results_dir) if os.path.isfile(os.path.join(results_dir, f))]
 res_files = sorted(res_files)
@@ -193,7 +194,10 @@ for i, file in enumerate(res_files):
 print(centroids)
 print(centroids.shape)
 
-outfile = 'centroids.pkl'
+outfile = 'centroids_timeit.pkl'
 fileObject = open(outfile, 'wb')
 pkl.dump(centroids, fileObject)
 fileObject.close()
+
+end_time = time.time()
+print("time elapsed: ", end_time - start_time)

@@ -57,7 +57,6 @@ for i, cam in enumerate(camList):
     pp.format
     print('\n')
 
-
 outParams = np.full((len(camList), 25), np.NaN)
 for nCam in range(len(camList)):
     p = camList[nCam]
@@ -66,6 +65,15 @@ for nCam in range(len(camList)):
     t = p['t']
     d = np.hstack((p['d'], np.array([0.0, 0.0])))
     outParams[nCam,:] = np.hstack((k, r_m, t, d))
+
+
+for i in range(nCams):
+    r = sba.cameraArray[i, 0:3].copy()
+    r_degree = np.degrees(r)
+    print("r_degree: ", r_degree)
+
+
+
 
 # stack for saving out the camera parameters
 # allParams = np.full((len(camList), 17), np.NaN)
@@ -78,5 +86,4 @@ for nCam in range(len(camList)):
 #     d = p['d']
 #     allParams[nCam,:] = np.hstack((r_m,t,f,d,c))
 
-
-np.savetxt('../calibres/calibration.csv', outParams, delimiter=',', newline=',\n', fmt='%f')
+# np.savetxt('../calibres/calibration.csv', outParams, delimiter=',', newline=',\n', fmt='%f')
