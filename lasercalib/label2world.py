@@ -12,7 +12,7 @@ from scipy.spatial.transform import Rotation as R
 from scipy.sparse import lil_matrix
 from scipy.optimize import least_squares
 
-my_palette = sns.color_palette()
+my_palette = sns.color_palette("rocket_r", 7)
 
 picklefile = open('../calibres/sba_data', 'rb')
 sba = pickle.load(picklefile)
@@ -46,12 +46,13 @@ rig_pts = np.array([[-1.3302, 0.64879, 0.0],
 target_pts = np.vstack((rig_pts, padding))
 
 def fun(params):
-    r = params.reshape(4,4)
+    r = params.reshape(3,4)
+    r = np.vstack((r, [0, 0, 0, 1]))
     out_pts = np.dot(r, input_pts)
     res = np.sum(np.absolute((target_pts.ravel() - out_pts.ravel()) ** 2))
     return res
 
-r1 = np.eye(4)
+r1 = np.hstack((np.eye(3), np.zeros((3,1))))
 params = r1.ravel()
 results = least_squares(fun, params)
 print("results: ", results.x)
@@ -76,7 +77,7 @@ ax[0].set_zlabel('Z Label')
 ax[0].set_title("initial points")
 
 
-transformation_matrix = results.x.reshape(4,4)
+transformation_matrix = np.vstack((results.x.reshape(3,4), [0, 0, 0, 1]))
 
 transformed_pts = np.dot(transformation_matrix, input_pts)
 ax.append(fig.add_subplot(1, 2, 2, projection='3d'))
@@ -107,11 +108,30 @@ laser_padding = np.ones((1, sba_pts.shape[1]))
 laser_pts = np.vstack((sba_pts, laser_padding))
 laser_pts_transformed = np.dot(transformation_matrix, laser_pts)
 
+print("sba.points3D shape before over-writing: ", sba.points3D.shape)
 
-ax.scatter(laser_pts_transformed[0,:], laser_pts_transformed[1,:], laser_pts_transformed[2,:])
+# update sba.points3D with transformed laser point positions
+sba.points3D = laser_pts_transformed[:3, :].copy().transpose()
+
+print("laser_pts_transformed shape: ", laser_pts_transformed.shape)
+print("sba.points3D shape: ", sba.points3D.shape)
+print("sba.cameraArray shape: ", sba.cameraArray.shape)
+
+# update extrinsic camera parameters while keeping 3D points fixed
+sba.bundle_adjustment_camonly()
+
+# print camera params
+x = PrettyTable()
+for row in sba.cameraArray:
+    x.add_row(row)
+print(x)
+
+ax.scatter(laser_pts_transformed[0,:], laser_pts_transformed[1,:], laser_pts_transformed[2,:], c='b', label='transformed laser points')
+ax.scatter(transformed_pts[0,:], transformed_pts[1,:], transformed_pts[2,:], c=np.linspace(0.5, 1, nPts), cmap='Oranges', vmin=0, vmax=1, label='transformed rig points')
 ax.set_xlabel('X Label')
 ax.set_ylabel('Y Label')
 ax.set_zlabel('Z Label')
+ax.legend()
 
 nCams = sba.cameraArray.shape[0]
 for i in range(nCams):

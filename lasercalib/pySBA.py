@@ -26,7 +26,7 @@ from scipy.spatial.transform import Rotation as R
 class PySBA:
     """Python class for Simple Bundle Adjustment"""
 
-    def __init__(self, cameraArray, points3D, points2D, cameraIndices, point2DIndices, pointWeights=None):
+    def __init__(self, cameraArray, points3D, points2D, cameraIndices, point2DIndices, points3Dfixed=None, pointWeights=None):
         """Intializes all the class attributes and instance variables.
             Write the specifications for each variable:
             cameraArray with shape (n_cameras, 11) contains initial estimates of parameters for all cameras.
@@ -42,18 +42,22 @@ class PySBA:
                     contatins indices of points (from 0 to n_points - 1) involved in each observation.
             points_2d with shape (n_observations, 2)
                     contains measured 2-D coordinates of points projected on images in each observations.
+            points_3d_fixed with shape (n_fixed_points, 3)
+                    contains estimate for 3D points from a CAD model of the rig
             pointWeights with shape (n_observations, )
                     contains cost function weights for each observation point.
+
         """
         self.cameraArray = cameraArray
         self.points3D = points3D
         self.points2D = points2D
-
         self.cameraIndices = cameraIndices
         self.point2DIndices = point2DIndices
+        self.points3Dfixed = points3Dfixed
         if pointWeights is None:
             pointWeights = np.full_like(point2DIndices, 1)
         self.pointWeights = pointWeights.reshape((-1, 1))
+        self.points3Dfixed_labeled = None
 
     def rotate(self, points, rot_vecs):
         """Rotate points by given rotation vectors.
@@ -146,6 +150,38 @@ class PySBA:
 
         return res
 
+
+    # added by RJ
+    def fun_camonly(self, params, n_cameras, n_points, camera_indices, point_indices, points_2d, pointWeights, points_3d):
+        """Compute residuals.
+        'params' contains camera extrinsic only"""
+        nCamParams = 11
+        camera_params = params.reshape(n_cameras, nCamParams)
+        points_proj = self.project(points_3d[point_indices], camera_params[camera_indices])
+        # weighted_residual = pointWeights*(points_proj-points_2d) ** 2
+        weighted_residual = pointWeights*(points_proj-points_2d) ** 2
+        return weighted_residual.ravel()
+
+
+    # added by RJ
+    def bundle_adjustment_camonly(self):
+        """ Returns the bundle adjusted parameters, in this case the optimized rotation and translation vectors"""
+        numCameras = self.cameraArray.shape[0]
+        numCamParams = 11
+        numPoints = self.points3D.shape[0]
+
+        x0 = self.cameraArray.ravel()
+        # A = self.bundle_adjustment_sparsity(numCameras, numPoints, self.cameraIndices, self.point2DIndices)
+
+        # res = least_squares(self.fun_camonly, x0, jac_sparsity=A, verbose=2, x_scale='jac', ftol=1e-6, method='trf', jac='3-point',
+        #                     args=(numCameras, numPoints, self.cameraIndices, self.point2DIndices, self.points2D, self.pointWeights, self.points3D))
+        res = least_squares(self.fun_camonly, x0, verbose=2, ftol=1e-5, method='trf',
+                            args=(numCameras, numPoints, self.cameraIndices, self.point2DIndices, self.points2D, self.pointWeights, self.points3D))
+
+        self.cameraArray = res.x.reshape(numCameras, numCamParams)
+        return res
+
+
     def getResiduals(self):
         """Gets residuals given current camera parameters and 3d locations"""
         numCameras = self.cameraArray.shape[0]
@@ -171,7 +207,6 @@ class PySBA:
         """Compute residuals.
         `params` contains 3-D coordinates only.
         """
-
         points_3d = params.reshape((n_points, 3))
         points_proj = self.project(points_3d[point_indices], camera_params[camera_indices])
         weighted_residual = pointWeights * (points_proj - points_2d)
