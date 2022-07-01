@@ -182,6 +182,66 @@ class PySBA:
         return res
 
 
+    # added by RJ
+    def fun_camonly_shared(self, params, n_cameras, n_points, camera_indices, point_indices, points_2d, pointWeights, points_3d, intrinsics):
+        """Compute residuals.
+        'params' contains camera extrinsic only"""
+        nCamParams = 8
+        extrinsics = params.reshape(n_cameras, nCamParams)
+        camera_params = np.hstack((extrinsics[:,:6], intrinsics, extrinsics[:,6:]))
+        points_proj = self.project(points_3d[point_indices], camera_params[camera_indices])
+        weighted_residual = pointWeights*(points_proj-points_2d) ** 2
+        # weighted_residual = pointWeights*(points_proj-points_2d)
+        return weighted_residual.ravel()
+
+    # added by RJ
+    def bundle_adjustment_camonly_shared(self):
+        """ Returns the bundle adjusted parameters, in this case the optimized rotation and translation vectors"""
+        numCameras = self.cameraArray.shape[0]
+        numCamParams = 8
+        numPoints = self.points3D.shape[0]
+
+        x0 = np.hstack((self.cameraArray[:,:6], self.cameraArray[:,9:])).ravel()
+
+        intrinsics = self.cameraArray[:,6:9]
+        res = least_squares(self.fun_camonly_shared, x0, verbose=2, ftol=1e-3, method='trf',
+                            args=(numCameras, numPoints, self.cameraIndices, self.point2DIndices, self.points2D, self.pointWeights, self.points3D, intrinsics))
+
+        extrinsics = res.x.reshape(numCameras, numCamParams)
+        self.cameraArray = np.hstack((extrinsics[:,:6], intrinsics, extrinsics[:,6:]))
+        return res
+
+    def fun_transform_points_3d(self, params, numCameras, n_points, camera_params, camera_indices, point_indices, points_2d, pointWeights, points_3d):
+        r = params.reshape(3,4)
+        r = np.vstack((r, [0, 0, 0, 1]))
+        input_pts = points_3d.transpose()
+        padding = np.ones(shape=(1, n_points))
+        input_pts = np.vstack((input_pts, padding))
+        transformed_points = np.dot(r, input_pts)
+        transformed_points3d = transformed_points.transpose()[:,:3]
+        points_proj = self.project(transformed_points3d[point_indices], camera_params[camera_indices])
+        weighted_residual = pointWeights*(points_proj-points_2d) ** 2
+        # weighted_residual = pointWeights*(points_proj-points_2d)
+        return weighted_residual.ravel()
+
+    
+    def bundleAdjust_transform_points_3d(self):
+        numCameras = self.cameraArray.shape[0]
+        numPoints = self.points3D.shape[0]
+        x0 = np.hstack((np.eye(3), np.zeros((3,1)))).ravel()
+        res = least_squares(self.fun_transform_points_3d, x0, verbose=2, ftol=1e-3, method='trf',
+                            args=(numCameras, numPoints, self.cameraArray, self.cameraIndices, self.point2DIndices, self.points2D, self.pointWeights, self.points3D))
+
+        transformation_matrix = np.vstack((res.x.reshape(3,4), [0, 0, 0, 1]))
+        
+        input_pts = self.points3D.transpose()
+        padding = np.ones(shape=(1, numPoints))
+        input_pts = np.vstack((input_pts, padding))
+        transformed_points = np.dot(transformation_matrix, input_pts)
+        transformed_points3d = transformed_points.transpose()[:,:3]
+        self.points3D = transformed_points3d
+        return res
+
     def getResiduals(self):
         """Gets residuals given current camera parameters and 3d locations"""
         numCameras = self.cameraArray.shape[0]
@@ -226,6 +286,8 @@ class PySBA:
         self.points3D = res.x.reshape((numPoints, 3))
 
         return res
+
+
 
     def bundle_adjustment_sparsity_sharedcam(self, numCameras, numPoints, cameraIndices, pointIndices):
         m = cameraIndices.size * 2

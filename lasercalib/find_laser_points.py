@@ -24,7 +24,7 @@ class CentroidFinder(threading.Thread):
         self.q = q
         self.small_footprint = morphology.disk(1)
         self.big_footprint = morphology.disk(4)
-        self.laser_intensity_thresh = 200
+        self.laser_intensity_thresh = 60
         self.centroid_dist_thresh = 1300
         self.centroids = centroids
 
@@ -36,7 +36,7 @@ class CentroidFinder(threading.Thread):
 
             green = img[:,:,1]
             cc = green > self.laser_intensity_thresh
-            cc = morphology.binary_erosion(cc, self.small_footprint)
+            # cc = morphology.binary_erosion(cc, self.small_footprint)
             cc = morphology.binary_closing(cc, self.big_footprint)
             labels = measure.label(cc, background=0, return_num=False)
             props = measure.regionprops(labels)
@@ -49,10 +49,16 @@ class CentroidFinder(threading.Thread):
         idx = []
         
         for i in range(n):
+            keep = True
             dist = ((props[i].centroid[0] - 1100)**2 + (props[i].centroid[1] - 1604)**2)**0.5
-            if dist < self.centroid_dist_thresh:
-                idx.append(i)
-        
+            if dist > self.centroid_dist_thresh:
+                continue
+            if (self.cam_name == "Cam3"):
+                if props[i].centroid[0] < 70:
+                    continue
+            
+            idx.append(i)
+                
         if len(idx) == 1:
             self.centroids[frame_idx, :] = props[idx[0]].centroid
             print(self.thread_name, "frame: ", frame_idx, "centroid:", self.centroids[frame_idx, :])
@@ -76,7 +82,7 @@ class SingleMovieManager(threading.Thread):
         self.metadata_path = self.root_dir + "/metadata/" + self.cam_name + "_meta.csv"
         self.results_file = self.root_dir + "/results/" + self.cam_name + "_centroids.pkl"
         self.curr_img_num = 0
-        self.frameRange = [400, 1650]
+        self.frameRange = [0, 2600]
         self.nFramesAnalyzed = self.frameRange[1] - self.frameRange[0]
         self.centroids = np.zeros((self.nFramesAnalyzed, 2), dtype=float)
         self.centroids[:] = np.nan
@@ -154,7 +160,8 @@ n_cams = 7
         ---> /metadata (contains [cam_name].csv file with frame_number and time_stamp on each line)
         ---> /results (empty folder to save pickle files)
 """
-root_dir = '/home/rob/laser_calibration/2022-05-02_16_40_25'
+
+root_dir = '/home/rob/Videos/Calibration20220701'
 
 pp = pprint.PrettyPrinter(indent=0)
 np.set_printoptions(precision=5)
@@ -194,7 +201,7 @@ for i, file in enumerate(res_files):
 print(centroids)
 print(centroids.shape)
 
-outfile = 'centroids_timeit.pkl'
+outfile = 'centroids_20220701.pkl'
 fileObject = open(outfile, 'wb')
 pkl.dump(centroids, fileObject)
 fileObject.close()

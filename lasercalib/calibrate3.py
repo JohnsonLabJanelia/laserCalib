@@ -9,13 +9,10 @@ import pySBA
 from my_cam_pose_visualizer import MyCamPoseVisualizer
 import seaborn as sns
 
-my_palette = sns.color_palette()
+my_palette = sns.color_palette("rocket_r", 7)
 
 
-filename = 'centroids_blender_full.pkl'
-# filename = '../centroids/old/centroids_timeit.pkl'
-
-# filename = 'centroids.pkl'
+filename = 'centroids_20220701.pkl'
 fileObject = open(filename, 'rb')
 pts = pkl.load(fileObject)
 fileObject.close()
@@ -25,51 +22,8 @@ pts = np.flip(pts, axis=1)
 nPts = pts.shape[0]
 nCams = pts.shape[2]
 
-# load camera data for pySBA
+# initialize cameraArray for pySBA
 cameraArray = np.zeros(shape=(nCams, 11))
-
-# # cam0
-# cameraArray[0, 0:3] = [-2.2151928, -2.2044225, 0.0019530592]
-# cameraArray[0, 3:6] = [-15.611495, -4.2011781, 2401.2117]
-# cameraArray[0, 6:9] = [1777.777, -0.015, -0.015]
-# cameraArray[0, 9:] = [1604, 1100]
-
-# # cam1
-# cameraArray[1, 0:3] = [1.9783967, -2.0124056, 0.44338688]
-# cameraArray[1, 3:6] = [-154.71857, -351.46274, 2299.1753]
-# cameraArray[1, 6:9] = [1777.777, -0.015, -0.015]
-# cameraArray[1, 9:] = [1604, 1100]
-
-# #cam2
-# cameraArray[2, 0:3] = [1.9780892, -2.0034461, 0.4536269]
-# cameraArray[2, 3:6] = [107.51159, -330.8779, 2300.0032]
-# cameraArray[2, 6:9] = [1777.777, -0.015, -0.015]
-# cameraArray[2, 9:] = [1604, 1100]
-
-# #cam3
-# cameraArray[3, 0:3] = [0.81482941, 2.8825006, -0.59704882]
-# cameraArray[3, 3:6] = [-113.24658, -372.63889, 2271.7502]
-# cameraArray[3, 6:9] = [1777.777, -0.015, -0.015]
-# cameraArray[3, 9:] = [1604, 1100]
-
-# #cam4
-# cameraArray[4, 0:3] = [0.82509673, 2.8785553, -0.59267741]
-# cameraArray[4, 3:6] = [134.61037, -379.2637, 2273.8696]
-# cameraArray[4, 6:9] = [1777.777, -0.015, -0.015]
-# cameraArray[4, 9:] = [1604, 1100]
-
-# #cam5
-# cameraArray[5, 0:3] = [2.612438, 0.79784292, -0.17937534]
-# cameraArray[5, 3:6] = [-74.572533, -305.59396, 2283.8472]
-# cameraArray[5, 6:9] = [1777.777, -0.015, -0.015]
-# cameraArray[5, 9:] = [1604, 1100]
-
-# #cam6
-# cameraArray[6, 0:3] = [2.6102991, 0.79794997, -0.17989315]
-# cameraArray[6, 3:6] = [190.82062, -295.33585, 2283.1584]
-# cameraArray[6, 6:9] = [1777.777, -0.015, -0.015]
-# cameraArray[6, 9:] = [1604, 1100]
-
 
 #initial guesses
 # cam0
@@ -85,8 +39,8 @@ cameraArray[1, 6:9] = [1777.777, -0.015, -0.015]
 cameraArray[1, 9:] = [1604, 1100]
 
 #cam2
-cameraArray[2, 0:3] = [0.0016478, 0.46612, -0.26862]
-cameraArray[2, 3:6] = [72.053, -1951.2, -1077.9]
+cameraArray[2, 0:3] = [0.65181, -2.4327, 1.4019]
+cameraArray[2, 3:6] = [-0.030555, -341.72, 2204]
 cameraArray[2, 6:9] = [1777.777, -0.015, -0.015]
 cameraArray[2, 9:] = [1604, 1100]
 
@@ -125,19 +79,18 @@ inPts = pts[keep, :, :]
 nPts = inPts.shape[0]
 print("nPts: ", nPts)
 
+nObs = np.sum(~np.isnan(inPts[:,0,:].ravel()))
+print("nObs: ", nObs)
+
 fig, axs = plt.subplots(1, nCams, sharey=True)
 plt.title('2D points found on all cameras')
 for i in range(nCams):
     colors = np.linspace(0, 1, nPts)
     axs[i].scatter(inPts[:,0,i], inPts[:,1,i], s=10, c=colors, alpha=0.5)
+    axs[i].plot(inPts[:,0,i], inPts[:,1,i])
     axs[i].title.set_text('cam' + str(i))
     axs[i].invert_yaxis()
 plt.show()
-
-
-nObs = np.sum(~np.isnan(inPts[:,0,:].ravel()))
-print("nObs: ", nObs)
-
 
 # create camera_ind variable
 camera_ind = np.zeros(shape=(nObs,), dtype=int)
@@ -164,11 +117,9 @@ for i in range(nPts):
     else:
         points_3d[i, 0:2] = inPts[i, :, 0]
 
-
 # # # center the world points
 points_3d[:,0] = points_3d[:,0] - 1604
 points_3d[:,1] = points_3d[:,1] - 1100
-
 
 
 """
@@ -181,14 +132,6 @@ x = PrettyTable()
 for row in sba.cameraArray:
     x.add_row(row)
 print(x)
-
-
-"""
-added by RJ
-first move the camera extrinsics and hold the 3D points constant
-"""
-sba.bundleAdjust_transform_points_3d()
-
 
 fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
@@ -209,6 +152,33 @@ for i in range(nCams):
     visualizer = MyCamPoseVisualizer(fig, ax)
     visualizer.extrinsic2pyramid(ex, my_palette[i], 200)
 plt.show()
+
+
+"""
+added by RJ
+first move the camera extrinsics and hold the 3D points constant
+"""
+# sba.bundleAdjust_transform_points_3d()
+
+# fig = plt.figure()
+# ax = fig.add_subplot(projection='3d')
+# ax.scatter(sba.points3D[:,0], sba.points3D[:,1], sba.points3D[:,2])
+# ax.set_xlabel('X Label')
+# ax.set_ylabel('Y Label')
+# ax.set_zlabel('Z Label')
+# plt.title('initial cam params and 3D points')
+# for i in range(nCams):
+#     r_f = R.from_rotvec(-sba.cameraArray[i, 0:3]).as_matrix().copy()
+#     t_f = sba.cameraArray[i, 3:6].copy()
+#     # get inverse transformation
+#     r_inv = r_f.T    
+#     t_inv = -np.matmul(r_f, t_f)    
+#     ex = np.eye(4)
+#     ex[:3,:3] = r_inv.T
+#     ex[:3,3] = t_inv
+#     visualizer = MyCamPoseVisualizer(fig, ax)
+#     visualizer.extrinsic2pyramid(ex, my_palette[i], 200)
+# plt.show()
 
 
 sba.bundleAdjust_nocam()
