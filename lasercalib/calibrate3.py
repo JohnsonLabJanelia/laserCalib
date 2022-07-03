@@ -261,6 +261,6 @@ for i in range(nCams):
 plt.show()
 
 sba.saveCamVecs()
-picklefile = open('../calibres/old/sba_blender', 'wb')
+picklefile = open('../calibres/sba_blender', 'wb')
 pkl.dump(sba, picklefile)
 picklefile.close()

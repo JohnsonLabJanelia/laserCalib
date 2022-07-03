@@ -159,6 +159,7 @@ n_cams = 7
         ---> /movies (contains movies with name: [cam_name].mp4)
         ---> /metadata (contains [cam_name].csv file with frame_number and time_stamp on each line)
         ---> /results (empty folder to save pickle files)
+
 """
 
 root_dir = '/home/rob/Videos/Calibration20220701'
