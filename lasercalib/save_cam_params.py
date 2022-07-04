@@ -11,7 +11,7 @@ from scipy.spatial.transform import Rotation as R
 
 my_palette = sns.color_palette()
 
-picklefile = open('../calibres/old/sba_guess', 'rb')
+picklefile = open('../calibres/sba_blender', 'rb')
 sba = pickle.load(picklefile)
 picklefile.close()
 
@@ -67,10 +67,6 @@ for nCam in range(len(camList)):
     outParams[nCam,:] = np.hstack((k, r_m, t, d))
 
 
-for i in range(nCams):
-    r = sba.cameraArray[i, 0:3].copy()
-    r_degree = np.degrees(r)
-    print("r_degree: ", r_degree)
 
 
 # stack for saving out the camera parameters
@@ -84,4 +80,4 @@ for nCam in range(len(camList)):
     d = p['d']
     allParams[nCam,:] = np.hstack((r_m,t,f,d,c))
 
-# np.savetxt('../calibres/calibration_guess.csv', outParams, delimiter=',', newline=',\n', fmt='%f')
+# np.savetxt('../calibres/calibration_20220704.csv', outParams, delimiter=',', newline=',\n', fmt='%f')
