@@ -78,7 +78,7 @@ class SingleMovieManager(threading.Thread):
         self.thread_name = "Thread-" + str(self.threadID)
         self.root_dir = root_dir
         self.cam_name = cam_name
-        self.movie_path = self.root_dir + "/movies/" + self.cam_name + ".mp4"
+        self.movie_path = self.root_dir + "/laser_movies/" + self.cam_name + ".mp4"
         self.metadata_path = self.root_dir + "/metadata/" + self.cam_name + "_meta.csv"
         self.results_file = self.root_dir + "/results/" + self.cam_name + "_centroids.pkl"
         self.curr_img_num = 0
@@ -162,7 +162,7 @@ n_cams = 7
 
 """
 
-root_dir = '/home/rob/Videos/Calibration20220701'
+root_dir = '/home/jinyao/calibration/Calibration20220930'
 
 pp = pprint.PrettyPrinter(indent=0)
 np.set_printoptions(precision=5)
@@ -202,7 +202,7 @@ for i, file in enumerate(res_files):
 print(centroids)
 print(centroids.shape)
 
-outfile = 'centroids_20220701.pkl'
+outfile = 'centroids_20220930.pkl'
 fileObject = open(outfile, 'wb')
 pkl.dump(centroids, fileObject)
 fileObject.close()
