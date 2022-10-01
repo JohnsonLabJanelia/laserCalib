@@ -65,7 +65,7 @@ def rigid_transform_3D(A, B):
     return R, t
 
 
-picklefile = open('../calibres/sba_blender', 'rb')
+picklefile = open('../calibres/sba_blender_2022-09-30.pkl', 'rb')
 sba = pickle.load(picklefile)
 picklefile.close()
 
@@ -79,17 +79,22 @@ nPts = 4
 padding = np.ones((1,nPts), dtype="float")
 
 # these are the xyz points from labeling 4 points in our labeling app (2 points in front of each robot)
-label_pts = np.array([[213.456,22.572,145.961],
-[219.653,-109.336,167.53],
-[26.4806,-122.939,140.294],
-[20.5503,8.2696,119.761]]).transpose()
+label_pts = np.array([[-0.486981,-53.6274,-59.1112],
+[180.239,-52.6075,-59.8065],
+[180.156,-315.251,-65.3472],
+[0.543318,-315.454,-64.8314]]).transpose()
 input_pts = np.vstack((label_pts, padding))
 
 # these are the xyz points in rig world space (rough estimate from the blender model -- in millimeters)
+# rig_pts = np.array([[0.0, 0.0, 0.0],
+# [0.0, -182.0, 0.0],
+# [-266.0, -182.0, 0.0],
+# [-266.0, 0.0, 0.0]]).transpose()
+
 rig_pts = np.array([[0.0, 0.0, 0.0],
-[0.0, -182.0, 0.0],
-[-266.0, -182.0, 0.0],
-[-266.0, 0.0, 0.0]]).transpose()
+[182.0, .0, 0.0],
+[182.0, -266.0, 0.0],
+[.0, -266.0, 0.0]]).transpose()
 target_pts = np.vstack((rig_pts, padding))
 
 def fun(params):
@@ -217,7 +222,7 @@ laser_pts_transformed = np.dot(transformation_matrix, laser_pts)
 
 
 
-nCams = 7
+nCams = 4
 camList = []
 for i in range(nCams):
     camList.append(pySBA.unconvertParams(sba.cameraArray[i,:]))
@@ -333,7 +338,6 @@ sba.points3D = laser_pts_transformed.copy()[:3,:].transpose()
 # sba.bundle_adjustment_camonly()
 sba.bundle_adjustment_camonly_shared()
 
-nCams = 7
 new_camList = []
 for i in range(nCams):
     new_camList.append(pySBA.unconvertParams(sba.cameraArray[i,:]))
@@ -423,7 +427,7 @@ for nCam in range(len(camList)):
     outParams[nCam,:] = np.hstack((k, r_m, t, d))
 
 
-# np.savetxt('../calibres/calibration_20220704_rigspace.csv', outParams, delimiter=',', newline=',\n', fmt='%f')
+np.savetxt('../calibres/calibration_20220930_rigspace.csv', outParams, delimiter=',', newline=',\n', fmt='%f')
 
 
 ################################

@@ -13,6 +13,9 @@ from multiprocessing import Process
 import signal
 import time
 import queue
+import argparse
+from datetime import date
+
 
 class CentroidFinder(threading.Thread):
     def __init__(self, root_dir, cam_name, thread_idx, q, centroids):
@@ -53,9 +56,10 @@ class CentroidFinder(threading.Thread):
             dist = ((props[i].centroid[0] - 1100)**2 + (props[i].centroid[1] - 1604)**2)**0.5
             if dist > self.centroid_dist_thresh:
                 continue
-            if (self.cam_name == "Cam3"):
-                if props[i].centroid[0] < 70:
-                    continue
+            # legacy 
+            # if (self.cam_name == "Cam3"):
+            #     if props[i].centroid[0] < 70:
+            #         continue
             
             idx.append(i)
                 
@@ -82,7 +86,7 @@ class SingleMovieManager(threading.Thread):
         self.metadata_path = self.root_dir + "/metadata/" + self.cam_name + "_meta.csv"
         self.results_file = self.root_dir + "/results/" + self.cam_name + "_centroids.pkl"
         self.curr_img_num = 0
-        self.frameRange = [0, 2600]
+        self.frameRange = [0, 4200]
         self.nFramesAnalyzed = self.frameRange[1] - self.frameRange[0]
         self.centroids = np.zeros((self.nFramesAnalyzed, 2), dtype=float)
         self.centroids[:] = np.nan
@@ -150,62 +154,71 @@ class SingleMovieManager(threading.Thread):
 
 ######## FIND CENTROIDS AND SAVE THEIR POSITIONS #########
 
-start_time = time.time()
+if __name__ == "__main__":
 
-n_cams = 7
+    """ Input folder need to be structure as follows 
 
-"""
-    root_dir should have 3 subdirectories:
-        ---> /movies (contains movies with name: [cam_name].mp4)
-        ---> /metadata (contains [cam_name].csv file with frame_number and time_stamp on each line)
-        ---> /results (empty folder to save pickle files)
+        root_dir should have 3 subdirectories:
+            ---> /movies (contains movies with name: [cam_name].mp4)
+            ---> /metadata (contains [cam_name].csv file with frame_number and time_stamp on each line, only needed if you have missing data)
+            ---> /results (empty folder to save pickle files)
 
-"""
+    """
 
-root_dir = '/home/jinyao/calibration/Calibration20220930'
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--n_cams', type=int, required=True)
+    parser.add_argument('--root_dir', type=str, required=True)
+    args = parser.parse_args()
 
-pp = pprint.PrettyPrinter(indent=0)
-np.set_printoptions(precision=5)
-np.set_printoptions(suppress=True)
+    outfile = '../calibres/centroids_{}.pkl'.format(str(date.today()))
+    print(outfile)
 
-threadpool = []
 
-for i in range(n_cams):
-    cam_name = "Cam" + str(i)
-    threadpool.append(SingleMovieManager(i, root_dir, cam_name))
 
-for thread in threadpool:
-    thread.start()
+    start_time = time.time()
 
-for thread in threadpool:
-    thread.join()
+    pp = pprint.PrettyPrinter(indent=0)
+    np.set_printoptions(precision=5)
+    np.set_printoptions(suppress=True)
 
-results_dir = root_dir + "/results"
-res_files = [os.path.join(results_dir, f) for f in os.listdir(results_dir) if os.path.isfile(os.path.join(results_dir, f))]
-res_files = sorted(res_files)
+    threadpool = []
 
-fileObject = open(res_files[0], 'rb')
-pts = pkl.load(fileObject)
-fileObject.close()
+    for i in range(args.n_cams):
+        cam_name = "Cam" + str(i)
+        threadpool.append(SingleMovieManager(i, args.root_dir, cam_name))
 
-n_pts_per_cam = pts.shape[0]
-n_cams = len(res_files)
-centroids = np.zeros((n_pts_per_cam, 2, n_cams))
-centroids[:] = np.nan
+    for thread in threadpool:
+        thread.start()
 
-for i, file in enumerate(res_files):
-    print(file)
-    fileObject = open(file, 'rb')
-    centroids[:,:,i] = pkl.load(fileObject)
+    for thread in threadpool:
+        thread.join()
+
+    results_dir = args.root_dir + "/results"
+    res_files = [os.path.join(results_dir, f) for f in os.listdir(results_dir) if os.path.isfile(os.path.join(results_dir, f))]
+    res_files = sorted(res_files)
+
+    fileObject = open(res_files[0], 'rb')
+    pts = pkl.load(fileObject)
     fileObject.close()
-    
-print(centroids)
-print(centroids.shape)
 
-outfile = 'centroids_20220930.pkl'
-fileObject = open(outfile, 'wb')
-pkl.dump(centroids, fileObject)
-fileObject.close()
+    n_pts_per_cam = pts.shape[0]
+    n_cams = len(res_files)
+    centroids = np.zeros((n_pts_per_cam, 2, n_cams))
+    centroids[:] = np.nan
 
-end_time = time.time()
-print("time elapsed: ", end_time - start_time)
+    for i, file in enumerate(res_files):
+        print(file)
+        fileObject = open(file, 'rb')
+        centroids[:,:,i] = pkl.load(fileObject)
+        fileObject.close()
+        
+    print(centroids)
+    print(centroids.shape)
+
+
+    fileObject = open(outfile, 'wb')
+    pkl.dump(centroids, fileObject)
+    fileObject.close()
+
+    end_time = time.time()
+    print("time elapsed: ", end_time - start_time)

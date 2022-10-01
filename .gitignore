@@ -128,7 +128,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# data folder 
+
+# data and data folder 
+*.npz
 data/
 results/
 calibres/

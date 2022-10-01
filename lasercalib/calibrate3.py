@@ -2,6 +2,7 @@ from tkinter.messagebox import NO
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle as pkl
+from datetime import date
 
 from scipy.spatial.transform import Rotation as R
 from prettytable import PrettyTable
@@ -9,10 +10,10 @@ import pySBA
 from my_cam_pose_visualizer import MyCamPoseVisualizer
 import seaborn as sns
 
-my_palette = sns.color_palette("rocket_r", 7)
+my_palette = sns.color_palette("rocket_r", 4)
 
 
-filename = 'centroids_20220701.pkl'
+filename = "../calibres/centroids_2022-09-30.pkl"
 fileObject = open(filename, 'rb')
 pts = pkl.load(fileObject)
 fileObject.close()
@@ -24,6 +25,50 @@ nCams = pts.shape[2]
 
 # initialize cameraArray for pySBA
 cameraArray = np.zeros(shape=(nCams, 11))
+
+#initial guesses
+# # cam0
+# cameraArray[0, 0:3] = [-3.14, 0, 0]
+# cameraArray[0, 3:6] = [0, -3.8224, 2400]
+# cameraArray[0, 6:9] = [1777.777, -0.015, -0.015]
+# cameraArray[0, 9:] = [1604, 1100]
+
+# # cam1
+# cameraArray[1, 0:3] = [-0.00014554, -3.0793, 0.62272]
+# cameraArray[1, 3:6] = [-0.074297, -375.19, 2198.6]
+# cameraArray[1, 6:9] = [1777.777, -0.015, -0.015]
+# cameraArray[1, 9:] = [1604, 1100]
+
+# #cam2
+# cameraArray[2, 0:3] = [0.65181, -2.4327, 1.4019]
+# cameraArray[2, 3:6] = [-0.030555, -341.72, 2204]
+# cameraArray[2, 6:9] = [1777.777, -0.015, -0.015]
+# cameraArray[2, 9:] = [1604, 1100]
+
+# #cam3
+# cameraArray[3, 0:3] = [2.409, 1.3909, -0.28182]
+# cameraArray[3, 3:6] = [0.018617, -373.52, 2198.8]
+# cameraArray[3, 6:9] = [1777.777, -0.015, -0.015]
+# cameraArray[3, 9:] = [1604, 1100]
+
+# #cam4
+# cameraArray[4, 0:3] = [1.5846, 1.5846, -0.9132]
+# cameraArray[4, 3:6] = [0.031478, -341.7, 2204]
+# cameraArray[4, 6:9] = [1777.777, -0.015, -0.015]
+# cameraArray[4, 9:] = [1604, 1100]
+
+# #cam5
+# cameraArray[5, 0:3] = [2.0397, -0.54654, 0.31497]
+# cameraArray[5, 3:6] = [0.0031259, -341.73, 2204]
+# cameraArray[5, 6:9] = [1777.777, -0.015, -0.015]
+# cameraArray[5, 9:] = [1604, 1100]
+
+# #cam6
+# cameraArray[6, 0:3] = [2.409, -1.3909, 0.28182]
+# cameraArray[6, 3:6] = [-0.018617, -373.52, 2198.8]
+# cameraArray[6, 6:9] = [1777.777, -0.015, -0.015]
+# cameraArray[6, 9:] = [1604, 1100]
+
 
 #initial guesses
 # cam0
@@ -38,35 +83,35 @@ cameraArray[1, 3:6] = [-0.074297, -375.19, 2198.6]
 cameraArray[1, 6:9] = [1777.777, -0.015, -0.015]
 cameraArray[1, 9:] = [1604, 1100]
 
-#cam2
-cameraArray[2, 0:3] = [0.65181, -2.4327, 1.4019]
-cameraArray[2, 3:6] = [-0.030555, -341.72, 2204]
+# #cam2
+# cameraArray[2, 0:3] = [0.65181, -2.4327, 1.4019]
+# cameraArray[2, 3:6] = [-0.030555, -341.72, 2204]
+# cameraArray[2, 6:9] = [1777.777, -0.015, -0.015]
+# cameraArray[2, 9:] = [1604, 1100]
+
+#cam3
+cameraArray[2, 0:3] = [2.409, 1.3909, -0.28182]
+cameraArray[2, 3:6] = [0.018617, -373.52, 2198.8]
 cameraArray[2, 6:9] = [1777.777, -0.015, -0.015]
 cameraArray[2, 9:] = [1604, 1100]
 
-#cam3
-cameraArray[3, 0:3] = [2.409, 1.3909, -0.28182]
-cameraArray[3, 3:6] = [0.018617, -373.52, 2198.8]
-cameraArray[3, 6:9] = [1777.777, -0.015, -0.015]
-cameraArray[3, 9:] = [1604, 1100]
+# #cam4
+# cameraArray[4, 0:3] = [1.5846, 1.5846, -0.9132]
+# cameraArray[4, 3:6] = [0.031478, -341.7, 2204]
+# cameraArray[4, 6:9] = [1777.777, -0.015, -0.015]
+# cameraArray[4, 9:] = [1604, 1100]
 
-#cam4
-cameraArray[4, 0:3] = [1.5846, 1.5846, -0.9132]
-cameraArray[4, 3:6] = [0.031478, -341.7, 2204]
-cameraArray[4, 6:9] = [1777.777, -0.015, -0.015]
-cameraArray[4, 9:] = [1604, 1100]
-
-#cam5
-cameraArray[5, 0:3] = [2.0397, -0.54654, 0.31497]
-cameraArray[5, 3:6] = [0.0031259, -341.73, 2204]
-cameraArray[5, 6:9] = [1777.777, -0.015, -0.015]
-cameraArray[5, 9:] = [1604, 1100]
+# #cam5
+# cameraArray[3, 0:3] = [2.0397, -0.54654, 0.31497]
+# cameraArray[3, 3:6] = [0.0031259, -341.73, 2204]
+# cameraArray[3, 6:9] = [1777.777, -0.015, -0.015]
+# cameraArray[3, 9:] = [1604, 1100]
 
 #cam6
-cameraArray[6, 0:3] = [2.409, -1.3909, 0.28182]
-cameraArray[6, 3:6] = [-0.018617, -373.52, 2198.8]
-cameraArray[6, 6:9] = [1777.777, -0.015, -0.015]
-cameraArray[6, 9:] = [1604, 1100]
+cameraArray[3, 0:3] = [2.409, -1.3909, 0.28182]
+cameraArray[3, 3:6] = [-0.018617, -373.52, 2198.8]
+cameraArray[3, 6:9] = [1777.777, -0.015, -0.015]
+cameraArray[3, 9:] = [1604, 1100]
 
 
 keep = np.zeros(shape=(nPts,), dtype=bool)
@@ -261,6 +306,10 @@ for i in range(nCams):
 plt.show()
 
 sba.saveCamVecs()
-picklefile = open('../calibres/sba_blender', 'wb')
+
+save_file_name = '../calibres/sba_blender_{}.pkl'.format(str(date.today()))
+picklefile = open(save_file_name, 'wb')
+
+
 pkl.dump(sba, picklefile)
 picklefile.close()
