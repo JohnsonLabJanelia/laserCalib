@@ -141,7 +141,7 @@ class PySBA:
 
         #res = least_squares(self.fun, x0, jac_sparsity=A, verbose=2, x_scale='jac', ftol=1e-4, method='trf',
         #                    args=(numCameras, numPoints, self.cameraIndices, self.point2DIndices, self.points2D))
-        res = least_squares(self.fun, x0, jac_sparsity=A, verbose=2, x_scale='jac', ftol=1e-6, method='trf', jac='3-point',
+        res = least_squares(self.fun, x0, jac_sparsity=A, verbose=2, x_scale='jac', ftol=1e-7, method='trf', jac='3-point',
                             args=(numCameras, numPoints, self.cameraIndices, self.point2DIndices, self.points2D, self.pointWeights))
 
         camera_params, points_3d = self.optimizedParams(res.x, numCameras, numPoints)
@@ -149,6 +149,9 @@ class PySBA:
         self.points3D = points_3d
 
         return res
+
+
+
 
 
     # added by RJ
@@ -180,6 +183,7 @@ class PySBA:
 
         self.cameraArray = res.x.reshape(numCameras, numCamParams)
         return res
+
 
 
     # added by RJ
@@ -220,7 +224,7 @@ class PySBA:
 
         x0 = np.hstack((camera_shared_intrinsic, camera_extrinsic, camera_centroids))
         
-        res = least_squares(self.fun_camonly_shared, x0, verbose=2, ftol=1e-7, method='trf',
+        res = least_squares(self.fun_camonly_shared, x0, verbose=2, ftol=1e-6, method='trf',
                             args=(numCameras, numPoints, self.cameraIndices, self.point2DIndices, self.points2D, self.pointWeights, self.points3D, camera_shared_intrinsic))
 
         cam_shared_intrinsic = res.x[:nCamIntrinsic]
@@ -301,7 +305,7 @@ class PySBA:
 
         x0 = self.points3D.ravel()
         A = self.bundle_adjustment_sparsity_nocam(numPoints, self.point2DIndices)
-        res = least_squares(self.fun_nocam, x0, jac_sparsity=A, verbose=2, x_scale='jac', ftol=1e-8, method='trf', jac='3-point',
+        res = least_squares(self.fun_nocam, x0, jac_sparsity=A, verbose=2, x_scale='jac', ftol=1e-7, method='trf', jac='3-point',
                             args=(camera_params, numPoints, self.cameraIndices, self.point2DIndices, self.points2D, self.pointWeights))
         self.points3D = res.x.reshape((numPoints, 3))
 
@@ -383,6 +387,7 @@ class PySBA:
         self.cameraArray = camera_params
         self.points3D = points_3d
         return res
+
     
     def saveCamVecs(self):
         outfile = 'sba_cameraArray'
