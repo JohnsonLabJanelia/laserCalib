@@ -11,8 +11,9 @@ from scipy.spatial.transform import Rotation as R
 
 from scipy.sparse import lil_matrix
 from scipy.optimize import least_squares
+from datetime import date
 
-my_palette = sns.color_palette("pastel", 7)
+my_palette = sns.color_palette("pastel", 4)
 
 
 
@@ -65,7 +66,7 @@ def rigid_transform_3D(A, B):
     return R, t
 
 
-picklefile = open('../calibres/sba_blender_2022-09-30.pkl', 'rb')
+picklefile = open('../calibres/sba_blender_2022-11-02.pkl', 'rb')
 sba = pickle.load(picklefile)
 picklefile.close()
 
@@ -79,11 +80,11 @@ nPts = 4
 padding = np.ones((1,nPts), dtype="float")
 
 # these are the xyz points from labeling 4 points in our labeling app (2 points in front of each robot)
-label_pts = np.array([[-0.486981,-53.6274,-59.1112],
-[180.239,-52.6075,-59.8065],
-[180.156,-315.251,-65.3472],
-[0.543318,-315.454,-64.8314]]).transpose()
-input_pts = np.vstack((label_pts, padding))
+# label_pts = np.array([[-0.486981,-53.6274,-59.1112],
+# [180.239,-52.6075,-59.8065],
+# [180.156,-315.251,-65.3472],
+# [0.543318,-315.454,-64.8314]]).transpose()
+# input_pts = np.vstack((label_pts, padding))
 
 # these are the xyz points in rig world space (rough estimate from the blender model -- in millimeters)
 # rig_pts = np.array([[0.0, 0.0, 0.0],
@@ -91,24 +92,39 @@ input_pts = np.vstack((label_pts, padding))
 # [-266.0, -182.0, 0.0],
 # [-266.0, 0.0, 0.0]]).transpose()
 
-rig_pts = np.array([[0.0, 0.0, 0.0],
-[182.0, .0, 0.0],
-[182.0, -266.0, 0.0],
-[.0, -266.0, 0.0]]).transpose()
+# rig_pts = np.array([[0.0, 0.0, 0.0],
+# [182.0, .0, 0.0],
+# [182.0, -266.0, 0.0],
+# [.0, -266.0, 0.0]]).transpose()
+# target_pts = np.vstack((rig_pts, padding))
+
+
+label_pts = np.array([[151.176,107.836,126.815],
+[153.721,-113.977,126.804],
+[-180.224,-113.599,126.461],
+[-182.32,107.832,126.666]]).transpose()
+input_pts = np.vstack((label_pts, padding))
+
+
+rig_pts = np.array([[-90.0, 135.0, 0.0],
+[90.0, 135.0, 0.0],
+[90.0, -135.0, 0.0],
+[-90.0, -135.0, 0.0]]).transpose()
 target_pts = np.vstack((rig_pts, padding))
 
-def fun(params):
-    r = params.reshape(3,4)
-    r = np.vstack((r, [0, 0, 0, 1]))
-    out_pts = np.dot(r, input_pts)
-    res = np.sum(np.absolute((target_pts.ravel() - out_pts.ravel()) ** 2))
-    return res
 
-r1 = np.hstack((np.eye(3), np.zeros((3,1))))
-params = r1.ravel()
-results = least_squares(fun, params)
-print("results: ", results.x)
-print("cost: ", results.cost)
+# def fun(params):
+#     r = params.reshape(3,4)
+#     r = np.vstack((r, [0, 0, 0, 1]))
+#     out_pts = np.dot(r, input_pts)
+#     res = np.sum(np.absolute((target_pts.ravel() - out_pts.ravel()) ** 2))
+#     return res
+
+# r1 = np.hstack((np.eye(3), np.zeros((3,1))))
+# params = r1.ravel()
+# results = least_squares(fun, params)
+# print("results: ", results.x)
+# print("cost: ", results.cost)
 
 
 A = label_pts.copy()
@@ -148,9 +164,11 @@ transformation_matrix = transform_label2world
 
 transformed_pts = np.dot(transformation_matrix, input_pts)
 
-transformation_matrix[:3,3] -= transformed_pts[:3, 0]
 
-transformed_pts = np.dot(transformation_matrix, input_pts)
+# this only work if the first point is origin, and correct for that transformation
+#transformation_matrix[:3,3] -= transformed_pts[:3, 0]  
+#transformed_pts = np.dot(transformation_matrix, input_pts)
+
 
 print("transformation_matrix")
 print(transformation_matrix)
@@ -158,11 +176,14 @@ print(transformation_matrix)
 print("transformed points")
 print(transformed_pts)
 
-chess_board_edge = transformed_pts[:3, 1].copy()
-print(chess_board_edge)
-mag = np.sqrt(chess_board_edge.dot(chess_board_edge))
+# chess_board_edge = transformed_pts[:3, 1].copy()
+# print(chess_board_edge)
+# mag = np.sqrt(chess_board_edge.dot(chess_board_edge))
 
-scale_mag = np.abs(182.0 / mag)
+
+mag = np.abs(transformed_pts[0, 1] - transformed_pts[0, 0])
+
+scale_mag = np.abs(180.0 / mag)
 scale_eye = np.eye(4) * scale_mag
 scale_eye[3,3] = 1
 print(scale_eye)
@@ -316,7 +337,7 @@ plt.show()
 
 ############################## Loading current best cam params
 
-picklefile = open('../calibres/sba_blender_rigspace', 'rb')
+picklefile = open('../calibres/sba_blender_2022-10-25.pkl', 'rb')
 sba_rigspace = pickle.load(picklefile)
 picklefile.close()
 
@@ -368,8 +389,8 @@ for row in sba.cameraArray:
     x.add_row(row)
 print(x)
     
-for i in range(nCams):
-    sba.cameraArray[i, 6:9] = [1777.777, -0.015, -0.015]
+# for i in range(nCams):
+#     sba.cameraArray[i, 6:9] = [1777.777, -0.015, -0.015]
 
 sba.bundleAdjust_sharedcam()
 
@@ -427,7 +448,7 @@ for nCam in range(len(camList)):
     outParams[nCam,:] = np.hstack((k, r_m, t, d))
 
 
-np.savetxt('../calibres/calibration_20220930_rigspace.csv', outParams, delimiter=',', newline=',\n', fmt='%f')
+np.savetxt('../calibres/calibration_{}_rigspace.csv'.format(str(date.today())), outParams, delimiter=',', newline=',\n', fmt='%f')
 
 
 ################################

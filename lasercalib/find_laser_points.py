@@ -15,7 +15,7 @@ import time
 import queue
 import argparse
 from datetime import date
-
+import cv2
 
 class CentroidFinder(threading.Thread):
     def __init__(self, root_dir, cam_name, thread_idx, q, centroids):
@@ -27,8 +27,8 @@ class CentroidFinder(threading.Thread):
         self.q = q
         self.small_footprint = morphology.disk(1)
         self.big_footprint = morphology.disk(4)
-        self.laser_intensity_thresh = 60
-        self.centroid_dist_thresh = 1300
+        self.laser_intensity_thresh = 70
+        self.centroid_dist_thresh = 1100
         self.centroids = centroids
 
     def process_queue(self):
@@ -39,8 +39,17 @@ class CentroidFinder(threading.Thread):
 
             green = img[:,:,1]
             cc = green > self.laser_intensity_thresh
-            # cc = morphology.binary_erosion(cc, self.small_footprint)
+            cc = morphology.binary_erosion(cc, self.small_footprint)
+            cc = morphology.binary_dilation(cc, self.small_footprint)
             cc = morphology.binary_closing(cc, self.big_footprint)
+
+            
+            ## roi 
+            mask_roi = np.zeros_like(green)
+            mask_roi = cv2.circle(mask_roi, (1604,1100), 1100, 255, -1)
+            cc = mask_roi * cc
+
+
             labels = measure.label(cc, background=0, return_num=False)
             props = measure.regionprops(labels)
             self.process_props(props, frame_idx)
@@ -86,7 +95,7 @@ class SingleMovieManager(threading.Thread):
         self.metadata_path = self.root_dir + "/metadata/" + self.cam_name + "_meta.csv"
         self.results_file = self.root_dir + "/results/" + self.cam_name + "_centroids.pkl"
         self.curr_img_num = 0
-        self.frameRange = [0, 4200]
+        self.frameRange = [0, 2900]
         self.nFramesAnalyzed = self.frameRange[1] - self.frameRange[0]
         self.centroids = np.zeros((self.nFramesAnalyzed, 2), dtype=float)
         self.centroids[:] = np.nan
@@ -194,6 +203,7 @@ if __name__ == "__main__":
         thread.join()
 
     results_dir = args.root_dir + "/results"
+
     res_files = [os.path.join(results_dir, f) for f in os.listdir(results_dir) if os.path.isfile(os.path.join(results_dir, f))]
     res_files = sorted(res_files)
 
