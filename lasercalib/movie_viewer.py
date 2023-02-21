@@ -4,7 +4,7 @@ import cv2
 from skimage import morphology
 from skimage import measure
 import numpy as np
-from centroid_finder import laser_finder
+from laser_finder import green_laser_finder
 
 def concat_vh(list_2d):
     return cv2.vconcat([cv2.hconcat(list_h) for list_h in list_2d])
@@ -33,7 +33,7 @@ class VideoGet:
                 (self.grabbed, frame) = self.stream.read()
                 
                 # process frames
-                laser_coord = laser_finder(frame, 70, 1100, morphology.disk(1), morphology.disk(4))
+                laser_coord = green_laser_finder(frame, 70, 1100, morphology.disk(1), morphology.disk(4))
                 if laser_coord:
                     frame = cv2.circle(frame, (int(laser_coord[1]), int(laser_coord[0])), 50, (0, 0, 255), 5)
 

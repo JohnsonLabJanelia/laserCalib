@@ -1,3 +1,7 @@
+"""
+Source code from: https://github.com/nrsyed/computer-vision/blob/master/get_video_pixel/get_video_pixel.py
+"""
+
 import numpy as np
 import cv2
 
