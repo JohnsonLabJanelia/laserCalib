@@ -8,7 +8,7 @@ import argparse
 from datetime import date
 from movie_manager import SingleMovieManager
 
-# python find_laser_points.py --n_cams=8 --root_dir=/home/jinyao/Calibration/newrig8 --frame_range 0 50 --width 3208 --height 2200
+# python find_laser_points.py --n_cams=8 --root_dir=/home/jinyao/Calibration/newrig8 --frame_range 0 5000 --width 3208 --height 2200
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--n_cams', type=int, required=True)
