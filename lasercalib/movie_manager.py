@@ -14,14 +14,10 @@ class SingleMovieManager(threading.Thread):
         self.cam_name = cam_name
         self.movie_path = self.root_dir + "/" + self.cam_name + ".mp4"
         self.results_file = self.root_dir + "/results/" + self.cam_name + "_centroids.pkl"
-        self.curr_img_num = 0
         self.frameRange = frame_range
         self.nFramesAnalyzed = self.frameRange[1] - self.frameRange[0]
         self.centroids = np.zeros((self.nFramesAnalyzed, 2), dtype=float)
         self.centroids[:] = np.nan
-        self.mask = np.zeros((height, width), dtype='uint8')
-        self.small_footprint = morphology.disk(1)
-        self.big_footprint = morphology.disk(4)
         self.centroid_threads = []
         self.q = queue.Queue()
         self.width = width
@@ -49,7 +45,7 @@ class SingleMovieManager(threading.Thread):
 
         self.start_centroid_threads()
 
-        for i in np.arange(self.frameRange[0], self.frameRange[1]):
+        for i in range(self.frameRange[0], self.frameRange[1]):
             self.curr_frame_idx = i - self.frameRange[0]
             raw_image = pipe.stdout.read(self.width*self.height*3)
 
