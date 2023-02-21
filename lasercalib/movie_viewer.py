@@ -62,7 +62,7 @@ for thread in threadpool:
 imgs = [None] * num_cams
 
 while True:
-    key = cv2.waitKey(1)
+    key = cv2.waitKey(1) & 0xFF
     
     if key == ord('q'):
         break
