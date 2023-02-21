@@ -38,7 +38,7 @@ class CentroidFinder(threading.Thread):
             labels = measure.label(cc, background=0, return_num=False)
             props = measure.regionprops(labels)
             self.process_props(props, frame_idx)
-            self.safe_print(self.thread_name, "frame: ", frame_idx, "centroid:", self.centroids[frame_idx, :])
+            print(self.thread_name, "frame: ", frame_idx, "centroid:", self.centroids[frame_idx, :])
 
     def process_props(self, props, frame_idx):
         # exclude connected components that are too far from image center
@@ -59,16 +59,12 @@ class CentroidFinder(threading.Thread):
                 
         if len(idx) == 1:
             self.centroids[frame_idx, :] = props[idx[0]].centroid
-            self.safe_print(self.thread_name, "frame: ", frame_idx, "centroid:", self.centroids[frame_idx, :])
+            print(self.thread_name, "frame: ", frame_idx, "centroid:", self.centroids[frame_idx, :])
         else:
-            self.safe_print(self.thread_name, "frame: ", frame_idx, "objects found: ", len((idx)))
+            print(self.thread_name, "frame: ", frame_idx, "objects found: ", len((idx)))
 
     def run(self):
-        self.safe_print(self.thread_name, "started")
+        # print(self.thread_name, "started")
         self.process_queue()
-        self.safe_print(self.thread_name, "finished")
+        # print(self.thread_name, "finished")
 
-
-    def safe_print(*args, sep=" ", end="", **kwargs):
-        joined_string = sep.join([ str(arg) for arg in args ])
-        print(joined_string  + "\n", sep=sep, end=end, **kwargs)

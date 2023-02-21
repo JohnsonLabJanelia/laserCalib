@@ -6,7 +6,7 @@ import queue
 import signal
 
 class SingleMovieManager(threading.Thread):
-    def __init__(self, threadID, root_dir, cam_name, frame_range):
+    def __init__(self, threadID, root_dir, cam_name, frame_range, width, height):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.thread_name = "Thread-" + str(self.threadID)
@@ -19,11 +19,13 @@ class SingleMovieManager(threading.Thread):
         self.nFramesAnalyzed = self.frameRange[1] - self.frameRange[0]
         self.centroids = np.zeros((self.nFramesAnalyzed, 2), dtype=float)
         self.centroids[:] = np.nan
-        self.mask = np.zeros((2200, 3208), dtype='uint8')
+        self.mask = np.zeros((height, width), dtype='uint8')
         self.small_footprint = morphology.disk(1)
         self.big_footprint = morphology.disk(4)
         self.centroid_threads = []
         self.q = queue.Queue()
+        self.width = width
+        self.height = height
 
     def ffmpeg_loader(self):
         FFMPEG_BIN = "ffmpeg"
@@ -39,20 +41,20 @@ class SingleMovieManager(threading.Thread):
             '-pix_fmt', 'rgb24',
             '-vcodec', 'rawvideo', '-']
         
-        pipe = sp.Popen(command, stdout=sp.PIPE, stderr=sp.PIPE, bufsize=3208*2200*3)
+        pipe = sp.Popen(command, stdout=sp.PIPE, stderr=sp.PIPE, bufsize=self.width*self.height*3)
 
         # skip unwanted initial frames
-        _ = pipe.stdout.read(3208*2200*3*self.frameRange[0])
+        _ = pipe.stdout.read(self.width*self.height*3*self.frameRange[0])
         pipe.stdout.flush()
 
         self.start_centroid_threads()
 
         for i in np.arange(self.frameRange[0], self.frameRange[1]):
             self.curr_frame_idx = i - self.frameRange[0]
-            raw_image = pipe.stdout.read(3208*2200*3)
+            raw_image = pipe.stdout.read(self.width*self.height*3)
 
             frame_idx = self.curr_frame_idx
-            self.q.put((frame_idx, np.frombuffer(raw_image, dtype='uint8').reshape((2200, 3208,3))))
+            self.q.put((frame_idx, np.frombuffer(raw_image, dtype='uint8').reshape((self.height, self.width, 3))))
             pipe.stdout.flush()
         
         # send termination signal to worker threads
@@ -80,12 +82,7 @@ class SingleMovieManager(threading.Thread):
             thread.start()
 
     def run(self):
-        self.safe_print("starting ", self.thread_name)
+        # print("starting ", self.thread_name)
         self.ffmpeg_loader()
         self.save_results()
-        self.safe_print(self.thread_name, " finished")
-
-
-    def safe_print(*args, sep=" ", end="", **kwargs):
-        joined_string = sep.join([ str(arg) for arg in args ])
-        print(joined_string  + "\n", sep=sep, end=end, **kwargs)
+        # print(self.thread_name, " finished")
