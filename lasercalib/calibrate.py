@@ -2,142 +2,89 @@ from tkinter.messagebox import NO
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle as pkl
-
+from datetime import date
+import seaborn as sns
 from scipy.spatial.transform import Rotation as R
 from prettytable import PrettyTable
 import pySBA
-from my_cam_pose_visualizer import MyCamPoseVisualizer
-import seaborn as sns
-
-my_palette = sns.color_palette()
+from camera_visualizer import CameraVisualizer
+from convert_params import load_from_blender
 
 
-filename = 'centroids_blender_full.pkl'
-# filename = '../centroids/old/centroids_timeit.pkl'
+root_dir = "/home/jinyao/Calibration/newrig8"
+cam_idx_3dpts = 4
+a = 1.0
 
-# filename = 'centroids.pkl'
-fileObject = open(filename, 'rb')
-pts = pkl.load(fileObject)
-fileObject.close()
+with open(root_dir + "/results/centroids.pkl", 'rb') as file:
+    pts = pkl.load(file)
 
 # flip xy (regionprops orders)
 pts = np.flip(pts, axis=1)
 nPts = pts.shape[0]
 nCams = pts.shape[2]
+my_palette = sns.color_palette("rocket_r", nCams)
+cameraArray = load_from_blender(root_dir + "/results/camera_dicts.pkl", nCams)
 
-# load camera data for pySBA
-cameraArray = np.zeros(shape=(nCams, 11))
+def sba_print(sba, nCams):
+    x = PrettyTable()
+    for row in sba.cameraArray:
+        x.add_row(row)
+    print(x)
 
-# # cam0
-# cameraArray[0, 0:3] = [-2.2151928, -2.2044225, 0.0019530592]
-# cameraArray[0, 3:6] = [-15.611495, -4.2011781, 2401.2117]
-# cameraArray[0, 6:9] = [1777.777, -0.015, -0.015]
-# cameraArray[0, 9:] = [1604, 1100]
+    r = sba.project(sba.points3D[sba.point2DIndices], sba.cameraArray[sba.cameraIndices]) - sba.points2D
+    print(r.shape)
+    r = np.sqrt(np.sum(r**2, axis=1))
+    plt.hist(r[r<np.percentile(r, 99)])
+    plt.xlabel('Reprojection Error')
+    plt.title('adjust points only')
+    plt.show()
 
-# # cam1
-# cameraArray[1, 0:3] = [1.9783967, -2.0124056, 0.44338688]
-# cameraArray[1, 3:6] = [-154.71857, -351.46274, 2299.1753]
-# cameraArray[1, 6:9] = [1777.777, -0.015, -0.015]
-# cameraArray[1, 9:] = [1604, 1100]
-
-# #cam2
-# cameraArray[2, 0:3] = [1.9780892, -2.0034461, 0.4536269]
-# cameraArray[2, 3:6] = [107.51159, -330.8779, 2300.0032]
-# cameraArray[2, 6:9] = [1777.777, -0.015, -0.015]
-# cameraArray[2, 9:] = [1604, 1100]
-
-# #cam3
-# cameraArray[3, 0:3] = [0.81482941, 2.8825006, -0.59704882]
-# cameraArray[3, 3:6] = [-113.24658, -372.63889, 2271.7502]
-# cameraArray[3, 6:9] = [1777.777, -0.015, -0.015]
-# cameraArray[3, 9:] = [1604, 1100]
-
-# #cam4
-# cameraArray[4, 0:3] = [0.82509673, 2.8785553, -0.59267741]
-# cameraArray[4, 3:6] = [134.61037, -379.2637, 2273.8696]
-# cameraArray[4, 6:9] = [1777.777, -0.015, -0.015]
-# cameraArray[4, 9:] = [1604, 1100]
-
-# #cam5
-# cameraArray[5, 0:3] = [2.612438, 0.79784292, -0.17937534]
-# cameraArray[5, 3:6] = [-74.572533, -305.59396, 2283.8472]
-# cameraArray[5, 6:9] = [1777.777, -0.015, -0.015]
-# cameraArray[5, 9:] = [1604, 1100]
-
-# #cam6
-# cameraArray[6, 0:3] = [2.6102991, 0.79794997, -0.17989315]
-# cameraArray[6, 3:6] = [190.82062, -295.33585, 2283.1584]
-# cameraArray[6, 6:9] = [1777.777, -0.015, -0.015]
-# cameraArray[6, 9:] = [1604, 1100]
-
-
-#initial guesses
-# cam0
-cameraArray[0, 0:3] = [-3.14, 0, 0]
-cameraArray[0, 3:6] = [0, -3.8224, 2400]
-cameraArray[0, 6:9] = [1777.777, -0.015, -0.015]
-cameraArray[0, 9:] = [1604, 1100]
-
-# cam1
-cameraArray[1, 0:3] = [-0.00014554, -3.0793, 0.62272]
-cameraArray[1, 3:6] = [-0.074297, -375.19, 2198.6]
-cameraArray[1, 6:9] = [1777.777, -0.015, -0.015]
-cameraArray[1, 9:] = [1604, 1100]
-
-#cam2
-cameraArray[2, 0:3] = [0.0016478, 0.46612, -0.26862]
-cameraArray[2, 3:6] = [72.053, -1951.2, -1077.9]
-cameraArray[2, 6:9] = [1777.777, -0.015, -0.015]
-cameraArray[2, 9:] = [1604, 1100]
-
-#cam3
-cameraArray[3, 0:3] = [2.409, 1.3909, -0.28182]
-cameraArray[3, 3:6] = [0.018617, -373.52, 2198.8]
-cameraArray[3, 6:9] = [1777.777, -0.015, -0.015]
-cameraArray[3, 9:] = [1604, 1100]
-
-#cam4
-cameraArray[4, 0:3] = [1.5846, 1.5846, -0.9132]
-cameraArray[4, 3:6] = [0.031478, -341.7, 2204]
-cameraArray[4, 6:9] = [1777.777, -0.015, -0.015]
-cameraArray[4, 9:] = [1604, 1100]
-
-#cam5
-cameraArray[5, 0:3] = [2.0397, -0.54654, 0.31497]
-cameraArray[5, 3:6] = [0.0031259, -341.73, 2204]
-cameraArray[5, 6:9] = [1777.777, -0.015, -0.015]
-cameraArray[5, 9:] = [1604, 1100]
-
-#cam6
-cameraArray[6, 0:3] = [2.409, -1.3909, 0.28182]
-cameraArray[6, 3:6] = [-0.018617, -373.52, 2198.8]
-cameraArray[6, 6:9] = [1777.777, -0.015, -0.015]
-cameraArray[6, 9:] = [1604, 1100]
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    ax.scatter(sba.points3D[:,0], sba.points3D[:,1], sba.points3D[:,2])
+    ax.set_xlabel('X Label')
+    ax.set_ylabel('Y Label')
+    ax.set_zlabel('Z Label')
+    plt.title('adjust points only')
+    for i in range(nCams):
+        r_f = R.from_rotvec(-sba.cameraArray[i, 0:3]).as_matrix().copy()
+        t_f = sba.cameraArray[i, 3:6].copy()
+        # get inverse transformation
+        r_inv = r_f.T    
+        t_inv = -np.matmul(r_f, t_f)    
+        ex = np.eye(4)
+        ex[:3,:3] = r_inv.T
+        ex[:3,3] = t_inv
+        visualizer = CameraVisualizer(fig, ax)
+        visualizer.extrinsic2pyramid(ex, my_palette[i], 200)
+    ax.set_xlim((-1500, 1500))
+    ax.set_ylim((-1500, 1500))
+    ax.set_zlim((-100, 1500))
+    plt.show()
 
 
 keep = np.zeros(shape=(nPts,), dtype=bool)
 for i in range(nPts):
     v = pts[i, 0, :]
-    if ((np.sum(~np.isnan(v)) >=3) and (~np.isnan(v[0]))):
+    if ((np.sum(~np.isnan(v)) >= nCams) and (~np.isnan(v[0]))):
         keep[i] = True
 
 inPts = pts[keep, :, :]
 nPts = inPts.shape[0]
 print("nPts: ", nPts)
 
+nObs = np.sum(~np.isnan(inPts[:,0,:].ravel()))
+print("nObs: ", nObs)
+
 fig, axs = plt.subplots(1, nCams, sharey=True)
 plt.title('2D points found on all cameras')
 for i in range(nCams):
     colors = np.linspace(0, 1, nPts)
     axs[i].scatter(inPts[:,0,i], inPts[:,1,i], s=10, c=colors, alpha=0.5)
+    axs[i].plot(inPts[:,0,i], inPts[:,1,i])
     axs[i].title.set_text('cam' + str(i))
     axs[i].invert_yaxis()
 plt.show()
-
-
-nObs = np.sum(~np.isnan(inPts[:,0,:].ravel()))
-print("nObs: ", nObs)
-
 
 # create camera_ind variable
 camera_ind = np.zeros(shape=(nObs,), dtype=int)
@@ -155,142 +102,30 @@ for i in range(nPts):
         ind += 1
 
 
-# prepare points_3d variable (initializing with 2d laser points in image space on cam0)
+# prepare points_3d variable (initializing with 2d laser points in image space on cam4)
 points_3d = np.zeros(shape=(nPts, 3))
 for i in range(nPts):
-    if (np.isnan(inPts[i, 0, 0])):
+    if (np.isnan(inPts[i, 0, cam_idx_3dpts])):
         points_3d[i, 0:2] = [1604, 1100]
         continue
     else:
-        points_3d[i, 0:2] = inPts[i, :, 0]
-
+        points_3d[i, 0:2] = inPts[i, :, cam_idx_3dpts]
 
 # # # center the world points
-points_3d[:,0] = points_3d[:,0] - 1604
-points_3d[:,1] = points_3d[:,1] - 1100
+points_3d[:,0] = a * (points_3d[:,0] - 1604)
+points_3d[:,1] = a * (points_3d[:,1] - 1100)
 
-
-
-"""
-initialize the SBA object with points and calibration (using an old calibration or just general ballpark calculated manually). 
-Then optimize for the 3d positions holding all camera parameters fixed
-"""
 sba = pySBA.PySBA(cameraArray, points_3d, points_2d, camera_ind, point_ind)
-
-x = PrettyTable()
-for row in sba.cameraArray:
-    x.add_row(row)
-print(x)
-
-
-"""
-added by RJ
-first move the camera extrinsics and hold the 3D points constant
-"""
-sba.bundleAdjust_transform_points_3d()
-
-
-fig = plt.figure()
-ax = fig.add_subplot(projection='3d')
-ax.scatter(sba.points3D[:,0], sba.points3D[:,1], sba.points3D[:,2])
-ax.set_xlabel('X Label')
-ax.set_ylabel('Y Label')
-ax.set_zlabel('Z Label')
-plt.title('initial cam params and 3D points')
-for i in range(nCams):
-    r_f = R.from_rotvec(-sba.cameraArray[i, 0:3]).as_matrix().copy()
-    t_f = sba.cameraArray[i, 3:6].copy()
-    # get inverse transformation
-    r_inv = r_f.T    
-    t_inv = -np.matmul(r_f, t_f)    
-    ex = np.eye(4)
-    ex[:3,:3] = r_inv.T
-    ex[:3,3] = t_inv
-    visualizer = MyCamPoseVisualizer(fig, ax)
-    visualizer.extrinsic2pyramid(ex, my_palette[i], 200)
-plt.show()
-
+sba_print(sba, nCams)
 
 sba.bundleAdjust_nocam()
+sba_print(sba, nCams)
 
-x = PrettyTable()
-for row in sba.cameraArray:
-    x.add_row(row)
-print(x)
+sba.bundleAdjust()
+sba_print(sba, nCams)
 
-r = sba.project(sba.points3D[sba.point2DIndices], sba.cameraArray[sba.cameraIndices]) - sba.points2D
-print(r.shape)
-r = np.sqrt(np.sum(r**2, axis=1))
-plt.hist(r[r<np.percentile(r, 99)])
-plt.xlabel('Reprojection Error')
-plt.title('no adjustment')
-plt.show()
+output_file = root_dir + "/results/sba_blender.pkl"
+with open(output_file, 'wb') as f:
+    pkl.dump(sba, f)
 
-fig = plt.figure()
-ax = fig.add_subplot(projection='3d')
-ax.scatter(sba.points3D[:,0], sba.points3D[:,1], sba.points3D[:,2])
-ax.set_xlabel('X Label')
-ax.set_ylabel('Y Label')
-ax.set_zlabel('Z Label')
-plt.title('cam params held; fit 3D points')
-for i in range(nCams):
-    r_f = R.from_rotvec(-sba.cameraArray[i, 0:3]).as_matrix().copy()
-    t_f = sba.cameraArray[i, 3:6].copy()
-    # get inverse transformation
-    r_inv = r_f.T    
-    t_inv = -np.matmul(r_f, t_f)    
-    ex = np.eye(4)
-    ex[:3,:3] = r_inv.T
-    ex[:3,3] = t_inv
-    visualizer = MyCamPoseVisualizer(fig, ax)
-    visualizer.extrinsic2pyramid(ex, my_palette[i], 200)
-plt.show()
-
-
-# """
-# Given the updated 3d positions jointly optimize the camera parameters and 3d positions to minimize reconstruction errors.  
-# Use sba.bundleAdjust() if you want each camera to have separate intrinsics.
-# sba.bundleAdjust_sharedcam() uses shared intrinsics but with different image centroids used for radial distortion.
-# """
-
-sba.bundleAdjust_sharedcam()
-
-x = PrettyTable()
-for row in sba.cameraArray:
-    x.add_row(row)
-print(x)
-
-r = sba.project(sba.points3D[sba.point2DIndices], sba.cameraArray[sba.cameraIndices]) - sba.points2D
-print(r)
-r = np.sqrt(np.sum(r**2, axis=1))
-plt.hist(r[r<np.percentile(r, 99)])
-plt.xlabel('Reprojection Error')
-plt.title('shared Intrinsics')
-plt.show()
-
-
-fig = plt.figure()
-ax = fig.add_subplot(projection='3d')
-ax.scatter(sba.points3D[:,0], sba.points3D[:,1], sba.points3D[:,2])
-ax.set_xlabel('X Label')
-ax.set_ylabel('Y Label')
-ax.set_zlabel('Z Label')
-plt.title('shared Intrinsics')
-
-for i in range(nCams):
-    r_f = R.from_rotvec(-sba.cameraArray[i, 0:3]).as_matrix().copy()
-    t_f = sba.cameraArray[i, 3:6].copy()
-    # get inverse transformation
-    r_inv = r_f.T    
-    t_inv = -np.matmul(r_f, t_f)    
-    ex = np.eye(4)
-    ex[:3,:3] = r_inv.T
-    ex[:3,3] = t_inv
-    visualizer = MyCamPoseVisualizer(fig, ax)
-    visualizer.extrinsic2pyramid(ex, my_palette[i], 200)
-plt.show()
-
-sba.saveCamVecs()
-picklefile = open('../calibres/old/sba_blender', 'wb')
-pkl.dump(sba, picklefile)
-picklefile.close()
+print("Done fitting, saved to: {}".format(output_file))

@@ -60,7 +60,7 @@ for i, file in enumerate(res_files):
     centroids[:,:,i] = pkl.load(fileObject)
     fileObject.close()
 
-outfile = results_dir + '/centroids_{}.pkl'.format(str(date.today()))
+outfile = results_dir + '/centroids.pkl'
 print(outfile)
 
 fileObject = open(outfile, 'wb')
