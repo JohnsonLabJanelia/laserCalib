@@ -2,7 +2,7 @@ import cv2
 import threading
 from skimage import morphology
 import numpy as np
-from laser_finder import green_laser_finder
+from feature_detection import green_laser_finder
 
 
 class CentroidFinder(threading.Thread):

@@ -4,22 +4,46 @@ import cv2
 from skimage import morphology
 from skimage import measure
 import numpy as np
-from laser_finder import green_laser_finder
+from feature_detection import green_laser_finder
+import math
 
 def concat_vh(list_2d):
     return cv2.vconcat([cv2.hconcat(list_h) for list_h in list_2d])
 
 class VideoGet:
-    def __init__(self, src, q):
-        self.stream = cv2.VideoCapture(src)
-        print(src)
+    def __init__(self, src_dir, q, cam_idx, laser=False, aruco=False):
+        
+        video_source = src_dir + "/Cam{}.mp4".format(cam_idx)
+        print(video_source)
+        self.stream = cv2.VideoCapture(video_source)
         if (self.stream.isOpened()== False): 
-            print("Error opening video: ", src)
+            print("Error opening video: ", video_source)
 
         (self.grabbed, self.frame) = self.stream.read()
         self.stopped = False
         self.q = q
         self.current_frame = 0
+        self.laser = laser
+        self.aruco = aruco
+        self.cam_idx = cam_idx
+        if self.aruco:
+            cam_params_file = src_dir + "/calibration_aruco/Cam{}.yaml".format(i)
+            self.cam_matrix, self.distortion = self.load_camera_intrinsic(cam_params_file)
+            # keep a moving average
+            self.corner_average = {
+                0: np.zeros((4, 2)),
+                1: np.zeros((4, 2)),
+                2: np.zeros((4, 2)),
+                3: np.zeros((4, 2))
+            }
+
+    def load_camera_intrinsic(self, cam_params_file):
+        fs = cv2.FileStorage(cam_params_file, cv2.FILE_STORAGE_READ)
+        m_matrix_coefficients = fs.getNode("intrinsicMatrix")
+        m_distortion_coefficients = fs.getNode("distortionCoefficients")
+        cam_matrix = m_matrix_coefficients.mat().T
+        distortion = m_distortion_coefficients.mat()[0]
+        return cam_matrix, distortion
 
     def start(self):    
         Thread(target=self.get, args=()).start()
@@ -32,10 +56,62 @@ class VideoGet:
             else:
                 (self.grabbed, frame) = self.stream.read()
                 
-                # process frames
-                laser_coord = green_laser_finder(frame, 70, 1100, morphology.disk(1), morphology.disk(4))
-                if laser_coord:
-                    frame = cv2.circle(frame, (int(laser_coord[1]), int(laser_coord[0])), 50, (0, 0, 255), 5)
+                if self.laser:
+                    # process frames
+                    laser_coord = green_laser_finder(frame, 70, 1100, morphology.disk(1), morphology.disk(4))
+                    if laser_coord:
+                        frame = cv2.circle(frame, (int(laser_coord[1]), int(laser_coord[0])), 50, (0, 0, 255), 5)
+
+                if self.aruco:
+                    frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_100)
+                    aruco_params = cv2.aruco.DetectorParameters_create() 
+                    aruco_params.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
+                    corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(frame_gray, aruco_dict, parameters=aruco_params)
+                    if len(corners) > 0:
+                        # flatten the ArUco IDs list
+                        ids = ids.flatten()
+                        # loop over the detected ArUCo corners
+                        for (markerCorner, markerID) in zip(corners, ids):
+                            # coplanar points from one view for pose estimation suffers from ambiguity: https://github.com/opencv/opencv/issues/8813 
+                            # rvec, tvec, markerPoints = cv2.aruco.estimatePoseSingleMarkers(markerCorner, 100, self.cam_matrix, self.distortion)
+                            # cv2.drawFrameAxes(frame, self.cam_matrix, self.distortion, rot, trans, 100)  # Draw Axis
+                            if np.sum(self.corner_average[markerID]) == 0:
+                                self.corner_average[markerID] = markerCorner.reshape((4, 2))
+                            else:
+                                self.corner_average[markerID] = (markerCorner.reshape((4, 2)) + self.corner_average[markerID])/2
+
+                    for markerID in self.corner_average.keys():        
+                        (topLeft, topRight, bottomRight, bottomLeft) = self.corner_average[markerID]
+                        # convert each of the (x, y)-coordinate pairs to integers
+                        topRight = (int(topRight[0]), int(topRight[1]))
+                        bottomRight = (int(bottomRight[0]), int(bottomRight[1]))
+                        bottomLeft = (int(bottomLeft[0]), int(bottomLeft[1]))
+                        topLeft = (int(topLeft[0]), int(topLeft[1]))
+
+                        # draw the bounding box of the ArUCo detection
+                        cv2.line(frame, topLeft, topRight, (0, 255, 0), 5)
+                        cv2.line(frame, topRight, bottomRight, (0, 0, 255), 5)
+                        cv2.line(frame, bottomRight, bottomLeft, (0, 0, 255), 5)
+                        cv2.line(frame, bottomLeft, topLeft, (0, 0, 255), 5)
+                        # compute and draw the center (x, y)-coordinates of the
+                        # ArUco marker
+                        cX = int((topLeft[0] + bottomRight[0]) / 2.0)
+                        cY = int((topLeft[1] + bottomRight[1]) / 2.0)
+                        cv2.circle(frame, (cX, cY), 4, (0, 0, 255), -1)
+                        # draw the ArUco marker ID on the frame)
+                        # compute and draw the center (x, y)-coordinates of the
+                        # ArUco marker
+                        cX = int((topLeft[0] + bottomRight[0]) / 2.0)
+                        cY = int((topLeft[1] + bottomRight[1]) / 2.0)
+                        cv2.circle(frame, (cX, cY), 4, (0, 0, 255), -1)
+                        # draw the ArUco marker ID on the frame
+                        cv2.putText(frame, str(markerID),
+                            (topLeft[0], topLeft[1] - 15),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            3, (0, 255, 0), 5)
+                            
+                            
 
                 self.current_frame = self.current_frame + 1
                 frame_small = cv2.resize(frame, (802, 550), interpolation = cv2.INTER_AREA)
@@ -53,8 +129,8 @@ for i in range(num_cams):
 
 threadpool = []
 for i in range(num_cams):
-    source = "/home/jinyao/Calibration/newrig8/Cam{}.mp4".format(i)
-    threadpool.append(VideoGet(source, view_queues[i]))
+    source_dir = "/home/jinyao/Calibration/newrig8/aruco_detection"
+    threadpool.append(VideoGet(source_dir, view_queues[i], i, False, True))
 
 for thread in threadpool:
     thread.start()
@@ -72,7 +148,7 @@ while True:
 
     for i in range(num_cams):
         frame_id, img = view_queues[i].get()
-        cv2.putText(img, "{:.0f}".format(frame_id),
+        cv2.putText(img, "Cam {}: {:.0f}".format(i, frame_id),
             (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255))
         imgs[i] = img
 

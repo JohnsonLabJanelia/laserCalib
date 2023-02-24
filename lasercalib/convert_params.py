@@ -2,20 +2,21 @@ import numpy as np
 import pickle as pkl
 from rigid_body import get_inverse_transformation
 from scipy.spatial.transform import Rotation as R
+import cv2
 
-def convertParams(camParams):
-    allParams = np.full((len(camParams), 11), np.NaN)
-    for nCam in range(len(camParams)):
-        p = camParams[nCam][0]
-        f = p['K'][0,0]/2 + p['K'][1,1]/2
-        r = -R.from_matrix(p['r']).as_rotvec()
+def readable_to_red_format(camList):
+    outParams = np.full((len(camList), 25), np.NaN)
+    for nCam in range(len(camList)):
+        p = camList[nCam]
+        k = np.transpose(p['K']).ravel()
+        r_m = np.transpose(p['R']).ravel()
         t = p['t']
-        c = p['K'][2,0:2]
-        d = p['RDistort']
-        allParams[nCam,:] = np.hstack((r,t,f,d,c))
-    return allParams
+        d = np.hstack((p['d'], np.array([0.0, 0.0])))
+        outParams[nCam,:] = np.hstack((k, r_m, t, d))
+    return outParams
 
-def unconvertParams(camParamVec):
+
+def sba_to_readable_format(camParamVec):
     thisK = np.full((3, 3), 0.0)
     thisK[0, 0] = camParamVec[6]
     thisK[1,1] = camParamVec[6]
@@ -60,3 +61,24 @@ def load_from_blender(filename, nCams):
         cameraArray[i][6:9] = [1500, 0, 0]
         cameraArray[i][9:11] = [1604, 1100]
     return cameraArray
+
+
+
+def save_for_aruco(save_root, nCams, cam):
+    for cam_idx in range(nCams):
+        intrinsicMatrix = np.asarray(cam[cam_idx][0:9]).reshape(3, 3)
+        intrinsicMatrix = intrinsicMatrix
+
+        distortionCoefficients = cam[cam_idx][21:25]
+        # distortionCoefficients.append(0.0)
+        distortionCoefficients = np.asarray(distortionCoefficients).reshape(4, 1)
+
+        # save it using opencv 
+        output_filename = save_root + 'Cam{}.yaml'.format(cam_idx)
+        s = cv2.FileStorage(output_filename, cv2.FileStorage_WRITE)
+        s.write('image_width', 3208)
+        s.write('image_height', 2200)
+
+        s.write('camera_matrix', intrinsicMatrix)
+        s.write('distortion_coefficients', distortionCoefficients)
+        s.release()
