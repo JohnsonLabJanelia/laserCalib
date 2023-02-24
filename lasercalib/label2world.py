@@ -6,7 +6,7 @@ import pprint
 from prettytable import PrettyTable
 import seaborn as sns
 import matplotlib.pyplot as plt
-from my_cam_pose_visualizer import MyCamPoseVisualizer
+from camera_visualizer import CameraVisualizer
 from scipy.spatial.transform import Rotation as R
 
 from scipy.sparse import lil_matrix
@@ -15,11 +15,10 @@ from datetime import date
 from rigid_body import rigid_transform_3D
 
 my_palette = sns.color_palette("pastel", 4)
+root_dir = "/home/jinyao/Calibration/newrig8"
 
-
-picklefile = open('../calibres/sba_blender.pkl', 'rb')
-sba = pickle.load(picklefile)
-picklefile.close()
+with open(root_dir + '/results/sba_blender.pkl', 'rb') as f:
+    sba = pickle.load(f)
 
 x = PrettyTable()
 for row in sba.cameraArray:
@@ -30,7 +29,7 @@ print(x)
 nPts = 4 
 padding = np.ones((1,nPts), dtype="float")
 
-# these are the xyz points from labeling 4 points in our labeling app (2 points in front of each robot)
+# these are the  4 points in our labeling app (2 points in front of each robot)
 # label_pts = np.array([[-0.486981,-53.6274,-59.1112],
 # [180.239,-52.6075,-59.8065],
 # [180.156,-315.251,-65.3472],
@@ -49,7 +48,7 @@ padding = np.ones((1,nPts), dtype="float")
 # [.0, -266.0, 0.0]]).transpose()
 # target_pts = np.vstack((rig_pts, padding))
 
-
+#points [x, y, z]  from original space 
 label_pts = np.array([[151.176,107.836,126.815],
 [153.721,-113.977,126.804],
 [-180.224,-113.599,126.461],
@@ -57,12 +56,12 @@ label_pts = np.array([[151.176,107.836,126.815],
 input_pts = np.vstack((label_pts, padding))
 
 
+#points [x, y, z] from target space 
 rig_pts = np.array([[-90.0, 135.0, 0.0],
 [90.0, 135.0, 0.0],
 [90.0, -135.0, 0.0],
 [-90.0, -135.0, 0.0]]).transpose()
 target_pts = np.vstack((rig_pts, padding))
-
 
 # def fun(params):
 #     r = params.reshape(3,4)
@@ -260,7 +259,7 @@ ax[1].quiver(x,y,z,u,v,w,arrow_length_ratio=0.1, color="black")
 
 for i, cam in enumerate(camList):
     ex = np.squeeze(cam_ex_rig_space[:,:,i])
-    visualizer = MyCamPoseVisualizer(fig, ax[1])
+    visualizer = CameraVisualizer(fig, ax[1])
     visualizer.extrinsic2pyramid(ex, my_palette[i], 200)
 
     # print("cam" + str(i))
@@ -329,7 +328,7 @@ for i, cam in enumerate(new_camList):
     ex[:3,:3] = cam["R"]
     ex[:3, 3] = t_inv
 
-    visualizer = MyCamPoseVisualizer(fig, ax)
+    visualizer = CameraVisualizer(fig, ax)
     visualizer.extrinsic2pyramid(ex, my_palette[i], 200)
 
 ax.scatter(sba.points3D[:,0], sba.points3D[:,1], sba.points3D[:,2], color='m', alpha=0.1)
@@ -366,7 +365,7 @@ for i in range(nCams):
     ex = np.eye(4)
     ex[:3,:3] = r_inv.T
     ex[:3,3] = t_inv
-    visualizer = MyCamPoseVisualizer(fig, ax)
+    visualizer = CameraVisualizer(fig, ax)
     visualizer.extrinsic2pyramid(ex, my_palette[i], 200)
 plt.show()
 

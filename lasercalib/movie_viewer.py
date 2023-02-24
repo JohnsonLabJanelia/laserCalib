@@ -5,7 +5,7 @@ from skimage import morphology
 from skimage import measure
 import numpy as np
 from feature_detection import green_laser_finder
-import math
+import pickle as pkl
 
 def concat_vh(list_2d):
     return cv2.vconcat([cv2.hconcat(list_h) for list_h in list_2d])
@@ -13,6 +13,7 @@ def concat_vh(list_2d):
 class VideoGet:
     def __init__(self, src_dir, q, cam_idx, laser=False, aruco=False):
         
+        self.src_dir = src_dir
         video_source = src_dir + "/Cam{}.mp4".format(cam_idx)
         print(video_source)
         self.stream = cv2.VideoCapture(video_source)
@@ -52,6 +53,7 @@ class VideoGet:
     def get(self):
         while not self.stopped:
             if not self.grabbed:
+                self.q.put((0, None))
                 self.stop()
             else:
                 (self.grabbed, frame) = self.stream.read()
@@ -73,7 +75,6 @@ class VideoGet:
                         ids = ids.flatten()
                         # loop over the detected ArUCo corners
                         for (markerCorner, markerID) in zip(corners, ids):
-                            # coplanar points from one view for pose estimation suffers from ambiguity: https://github.com/opencv/opencv/issues/8813 
                             # rvec, tvec, markerPoints = cv2.aruco.estimatePoseSingleMarkers(markerCorner, 100, self.cam_matrix, self.distortion)
                             # cv2.drawFrameAxes(frame, self.cam_matrix, self.distortion, rot, trans, 100)  # Draw Axis
                             if np.sum(self.corner_average[markerID]) == 0:
@@ -81,8 +82,8 @@ class VideoGet:
                             else:
                                 self.corner_average[markerID] = (markerCorner.reshape((4, 2)) + self.corner_average[markerID])/2
 
-                    for markerID in self.corner_average.keys():        
-                        (topLeft, topRight, bottomRight, bottomLeft) = self.corner_average[markerID]
+                    for markerID, markerCorner in self.corner_average.items():        
+                        (topLeft, topRight, bottomRight, bottomLeft) = markerCorner
                         # convert each of the (x, y)-coordinate pairs to integers
                         topRight = (int(topRight[0]), int(topRight[1]))
                         bottomRight = (int(bottomRight[0]), int(bottomRight[1]))
@@ -94,23 +95,20 @@ class VideoGet:
                         cv2.line(frame, topRight, bottomRight, (0, 0, 255), 5)
                         cv2.line(frame, bottomRight, bottomLeft, (0, 0, 255), 5)
                         cv2.line(frame, bottomLeft, topLeft, (0, 0, 255), 5)
-                        # compute and draw the center (x, y)-coordinates of the
-                        # ArUco marker
+                        # compute and draw the center (x, y)-coordinates of the ArUco marker                        
                         cX = int((topLeft[0] + bottomRight[0]) / 2.0)
                         cY = int((topLeft[1] + bottomRight[1]) / 2.0)
-                        cv2.circle(frame, (cX, cY), 4, (0, 0, 255), -1)
-                        # draw the ArUco marker ID on the frame)
-                        # compute and draw the center (x, y)-coordinates of the
-                        # ArUco marker
-                        cX = int((topLeft[0] + bottomRight[0]) / 2.0)
-                        cY = int((topLeft[1] + bottomRight[1]) / 2.0)
-                        cv2.circle(frame, (cX, cY), 4, (0, 0, 255), -1)
+                        cv2.circle(frame, (cX, cY), 5, (0, 0, 255), -1)                        
                         # draw the ArUco marker ID on the frame
                         cv2.putText(frame, str(markerID),
                             (topLeft[0], topLeft[1] - 15),
                             cv2.FONT_HERSHEY_SIMPLEX,
                             3, (0, 255, 0), 5)
-                            
+                        
+                        # # coplanar points from one view for pose estimation suffers from ambiguity: https://github.com/opencv/opencv/issues/8813 
+                        # rvecs, tvecs, markerPoints = cv2.aruco.estimatePoseSingleMarkers(markerCorner.reshape((1, 4, 2)), 120, self.cam_matrix, self.distortion)
+                        # rot, trans = rvecs[0].ravel(), tvecs[0].ravel()
+                        # cv2.drawFrameAxes(frame, self.cam_matrix, self.distortion, rot, trans, 120)  # Draw Axis    
                             
 
                 self.current_frame = self.current_frame + 1
@@ -118,6 +116,11 @@ class VideoGet:
                 self.q.put((self.current_frame, frame_small))
 
     def stop(self):
+        # save the corners 
+        if self.aruco:
+            with open(self.src_dir + "/calibration_aruco/Cam{}_aruco.pkl".format(self.cam_idx), 'wb') as f:
+                pkl.dump(self.corner_average, f)
+            print("Aruco corner detection saved.")
         self.stopped = True
 
 
@@ -140,7 +143,7 @@ imgs = [None] * num_cams
 while True:
     key = cv2.waitKey(1) & 0xFF
     
-    if key == ord('q'):
+    if key == ord('q'):    
         break
     
     if key == ord('p'):

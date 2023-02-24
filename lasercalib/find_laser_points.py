@@ -47,25 +47,19 @@ for i in range(args.n_cams):
     f = "Cam{}_centroids.pkl".format(i)
     res_files.append(os.path.join(results_dir, f))
 
-fileObject = open(res_files[0], 'rb')
-pts = pkl.load(fileObject)
-fileObject.close()
+with open(res_files[0], 'rb') as f:
+    pts = pkl.load(f)
 
 n_pts_per_cam = pts.shape[0]
 centroids = np.zeros((n_pts_per_cam, 2, args.n_cams))
 centroids[:] = np.nan
 
 for i, file in enumerate(res_files):
-    fileObject = open(file, 'rb')
-    centroids[:,:,i] = pkl.load(fileObject)
-    fileObject.close()
+    with open(file, 'rb') as f:
+        centroids[:,:,i] = pkl.load(f)
 
-outfile = results_dir + '/centroids.pkl'
-print(outfile)
-
-fileObject = open(outfile, 'wb')
-pkl.dump(centroids, fileObject)
-fileObject.close()
+with open(results_dir + '/centroids.pkl', 'wb') as f:
+    pkl.dump(centroids, f)
 
 end_time = time.time()
 print("time elapsed: {:.2f} second".format(end_time - start_time))

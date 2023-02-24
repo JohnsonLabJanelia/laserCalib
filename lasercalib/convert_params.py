@@ -70,7 +70,6 @@ def save_for_aruco(save_root, nCams, cam):
         intrinsicMatrix = intrinsicMatrix
 
         distortionCoefficients = cam[cam_idx][21:25]
-        # distortionCoefficients.append(0.0)
         distortionCoefficients = np.asarray(distortionCoefficients).reshape(4, 1)
 
         # save it using opencv 
