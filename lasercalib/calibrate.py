@@ -10,10 +10,11 @@ import pySBA
 from camera_visualizer import CameraVisualizer
 from convert_params import load_from_blender
 
-
+## inputs to the file
 root_dir = "/home/jinyao/Calibration/newrig8"
 cam_idx_3dpts = 4
 a = 1.0
+## 
 
 with open(root_dir + "/results/centroids.pkl", 'rb') as file:
     pts = pkl.load(file)

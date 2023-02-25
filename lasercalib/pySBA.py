@@ -147,10 +147,33 @@ class PySBA:
         return res
 
 
+   # added by RJ
+    def fun_camonly(self, params, n_cameras, n_points, camera_indices, point_indices, points_2d, pointWeights, points_3d):
+        nCamParams = 11
+        camera_params = params.reshape(n_cameras, nCamParams)
+        points_proj = self.project(points_3d[point_indices], camera_params[camera_indices])
+        weighted_residual = pointWeights*(points_proj-points_2d) ** 2
+        return weighted_residual.ravel()
+
+
+    # added by RJ
+    def bundle_adjustment_camonly(self, ftol=1e-3):
+        numCameras = self.cameraArray.shape[0]
+        numCamParams = 11
+        numPoints = self.points3D.shape[0]
+
+        x0 = self.cameraArray.ravel()
+        # A = self.bundle_adjustment_sparsity(numCameras, numPoints, self.cameraIndices, self.point2DIndices)
+        # res = least_squares(self.fun_camonly, x0, jac_sparsity=A, verbose=2, x_scale='jac', ftol=1e-6, method='trf', jac='3-point',
+        #                     args=(numCameras, numPoints, self.cameraIndices, self.point2DIndices, self.points2D, self.pointWeights, self.points3D))
+        res = least_squares(self.fun_camonly, x0, verbose=2, ftol=ftol, method='trf',
+                            args=(numCameras, numPoints, self.cameraIndices, self.point2DIndices, self.points2D, self.pointWeights, self.points3D))
+
+        self.cameraArray = res.x.reshape(numCameras, numCamParams)
+        return res
+
     # added by RJ
     def fun_camonly_shared(self, params, n_cameras, n_points, camera_indices, point_indices, points_2d, pointWeights, points_3d, intrinsics):
-        """Compute residuals.
-        'params' contains camera extrinsic only"""
         nCamIntrinsic = 3
         nCamExtrinsic = 6
         nCamCentroid = 2
@@ -166,10 +189,8 @@ class PySBA:
         weighted_residual = pointWeights * (points_proj - points_2d)
         return weighted_residual.ravel()
 
-
     # added by RJ
-    def bundle_adjustment_camonly_shared(self):
-        """ Returns the bundle adjusted parameters, in this case the optimized rotation and translation vectors"""
+    def bundle_adjustment_camonly_shared(self, ftol=1e-3):
         numCameras = self.cameraArray.shape[0]
         numPoints = self.points3D.shape[0]
 
@@ -185,7 +206,7 @@ class PySBA:
 
         x0 = np.hstack((camera_shared_intrinsic, camera_extrinsic, camera_centroids))
 
-        res = least_squares(self.fun_camonly_shared, x0, verbose=2, ftol=1e-4, method='trf',
+        res = least_squares(self.fun_extrinsics_with_shared_intrinsic, x0, verbose=2, ftol=ftol, method='trf',
                             args=(numCameras, numPoints, self.cameraIndices, self.point2DIndices, self.points2D, self.pointWeights, self.points3D, camera_shared_intrinsic))
 
         cam_shared_intrinsic = res.x[:nCamIntrinsic]

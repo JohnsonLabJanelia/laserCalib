@@ -9,15 +9,18 @@ import matplotlib.pyplot as plt
 from camera_visualizer import CameraVisualizer
 from scipy.spatial.transform import Rotation as R
 from convert_params import *
-
-from scipy.sparse import lil_matrix
-from scipy.optimize import least_squares
 from datetime import date
 from rigid_body import rigid_transform_3D
 
+## inputs to the file
 nCams= 8
 root_dir = "/home/jinyao/Calibration/newrig8"
 my_palette = sns.color_palette("pastel", nCams)
+# 4 feature points on a square
+label_pts = np.array([[-780.618, 741.511, 586.724], [-792.757, -748.489, 599.694], [706.665, -773.379, 607.877], [721.711, 725.702, 601.463]]).transpose()
+rig_pts = np.array([[-692.0, 692.0, 0.0], [-692.0, -692.0, 0.0], [692, -692, 0.0], [692, 692, 0.0]]).transpose()
+##
+
 
 with open(root_dir + '/results/sba_blender.pkl', 'rb') as f:
     sba = pickle.load(f)
@@ -30,64 +33,9 @@ print(x)
 # number of labeled points
 nPts = 4 
 padding = np.ones((1,nPts), dtype="float")
-
-# these are the  4 points in our labeling app (2 points in front of each robot)
-# label_pts = np.array([[-0.486981,-53.6274,-59.1112],
-# [180.239,-52.6075,-59.8065],
-# [180.156,-315.251,-65.3472],
-# [0.543318,-315.454,-64.8314]]).transpose()
-# input_pts = np.vstack((label_pts, padding))
-
-# these are the xyz points in rig world space (rough estimate from the blender model -- in millimeters)
-# rig_pts = np.array([[0.0, 0.0, 0.0],
-# [0.0, -182.0, 0.0],
-# [-266.0, -182.0, 0.0],
-# [-266.0, 0.0, 0.0]]).transpose()
-
-# rig_pts = np.array([[0.0, 0.0, 0.0],
-# [182.0, .0, 0.0],
-# [182.0, -266.0, 0.0],
-# [.0, -266.0, 0.0]]).transpose()
-# target_pts = np.vstack((rig_pts, padding))
-
-#points [x, y, z]  from original space 
-
-# label_pts = np.array([[151.176,107.836,126.815],
-# [153.721,-113.977,126.804],
-# [-180.224,-113.599,126.461],
-# [-182.32,107.832,126.666]]).transpose()
-# input_pts = np.vstack((label_pts, padding))
-
-label_pts = np.array([[-780.618, 741.511, 586.724], [-792.757, -748.489, 599.694], [706.665, -773.379, 607.877], [721.711, 725.702, 601.463]]).transpose()
 input_pts = np.vstack((label_pts, padding))
-
-
-#points [x, y, z] from target space 
-# rig_pts = np.array([[-90.0, 135.0, 0.0],
-# [90.0, 135.0, 0.0],
-# [90.0, -135.0, 0.0],
-# [-90.0, -135.0, 0.0]]).transpose()
-# target_pts = np.vstack((rig_pts, padding))
-
-
-rig_pts = np.array([[-762.0, 762.0, 0.0], [-762.0, -762.0, 0.0], [762, -762, 0.0], [762, 762, 0.0]]).transpose()
 target_pts = np.vstack((rig_pts, padding))
-edge_len = 1524.0
-
-
-
-# def fun(params):
-#     r = params.reshape(3,4)
-#     r = np.vstack((r, [0, 0, 0, 1]))
-#     out_pts = np.dot(r, input_pts)
-#     res = np.sum(np.absolute((target_pts.ravel() - out_pts.ravel()) ** 2))
-#     return res
-
-# r1 = np.hstack((np.eye(3), np.zeros((3,1))))
-# params = r1.ravel()
-# results = least_squares(fun, params)
-# print("results: ", results.x)
-# print("cost: ", results.cost)
+edge_len = rig_pts[1, 0] - rig_pts[0, 0]
 
 
 A = label_pts.copy()
@@ -120,18 +68,8 @@ ax[0].set_zlabel('Z Label')
 ax[0].set_title("initial points")
 
 
-# transformation_matrix = np.vstack((results.x.reshape(3,4), [0, 0, 0, 1]))
 transformation_matrix = transform_label2world
-
-
-
 transformed_pts = np.dot(transformation_matrix, input_pts)
-
-
-# this only work if the first point is origin, and correct for that transformation
-#transformation_matrix[:3,3] -= transformed_pts[:3, 0]  
-#transformed_pts = np.dot(transformation_matrix, input_pts)
-
 
 print("transformation_matrix")
 print(transformation_matrix)
@@ -139,11 +77,7 @@ print(transformation_matrix)
 print("transformed points")
 print(transformed_pts)
 
-# chess_board_edge = transformed_pts[:3, 1].copy()
-# print(chess_board_edge)
-# mag = np.sqrt(chess_board_edge.dot(chess_board_edge))
-
-
+## TODO: fit scaling matrix together
 mag = np.abs(transformed_pts[1, 0] - transformed_pts[0, 0])
 scale_mag = np.abs(edge_len / mag)
 scale_eye = np.eye(4) * scale_mag
@@ -182,26 +116,6 @@ sba_pts = sba.points3D.copy().transpose()
 laser_padding = np.ones((1, sba_pts.shape[1]))
 laser_pts = np.vstack((sba_pts, laser_padding))
 laser_pts_transformed = np.dot(transformation_matrix, laser_pts)
-
-
-# fig = plt.figure()
-# ax = fig.add_subplot(projection='3d')
-
-# ax.scatter(laser_pts_transformed[0,:], laser_pts_transformed[1,:], laser_pts_transformed[2,:], c='b', label='transformed laser points')
-# ax.scatter(transformed_pts[0,:], transformed_pts[1,:], transformed_pts[2,:], c=np.linspace(0.5, 1, nPts), cmap='Oranges', vmin=0, vmax=1, label='transformed rig points')
-# ax.set_xlabel('X Label')
-# ax.set_ylabel('Y Label')
-# ax.set_zlabel('Z Label')
-# ax.set_xlim([-2400, 2400])
-# ax.set_ylim([-2400, 2400])
-# ax.set_zlim([-2400, 2400])
-# ax.legend()
-
-
-# pp = pprint.PrettyPrinter(indent=0)
-# np.set_printoptions(precision=5)
-# np.set_printoptions(suppress=True)
-# plt.show()
 
 
 
@@ -314,8 +228,8 @@ This code block works to put the camera parameters in rig space - but is messy (
 
 sba.points3D = laser_pts_transformed.copy()[:3,:].transpose()
 
-# sba.bundle_adjustment_camonly()
-sba.bundle_adjustment_camonly_shared()
+sba.bundle_adjustment_camonly()
+# sba.bundle_adjustment_camonly_shared()
 
 new_camList = []
 for i in range(nCams):
@@ -348,7 +262,7 @@ for row in sba.cameraArray:
 print(x)
     
 
-sba.bundleAdjust_sharedcam()
+sba.bundleAdjust()
 
 x = PrettyTable()
 for row in sba.cameraArray:
@@ -377,7 +291,6 @@ plt.show()
 
 
 r = sba.project(sba.points3D[sba.point2DIndices], sba.cameraArray[sba.cameraIndices]) - sba.points2D
-print(r)
 r = np.sqrt(np.sum(r**2, axis=1))
 plt.hist(r[r<np.percentile(r, 99)])
 plt.xlabel('Reprojection Error')
