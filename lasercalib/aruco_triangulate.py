@@ -34,8 +34,11 @@ undistorted_pts = np.asarray(undistorted_pts)
 
 pts_3d = []
 
+
 for center_idx in range(4):
-    ## triangulation 
+    # triangulation 
+    # https://filebox.ece.vt.edu/~jbhuang/teaching/ece5554-4554/fa17/lectures/Lecture_15_StructureFromMotion.pdf
+    # https://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
     A = np.zeros([16, 4])
     for cam_idx in range(nCams):
         proj_matrix = np.zeros((3, 4))
