@@ -147,6 +147,55 @@ class PySBA:
         return res
 
 
+    # added by RJ
+    def fun_camonly_shared(self, params, n_cameras, n_points, camera_indices, point_indices, points_2d, pointWeights, points_3d, intrinsics):
+        """Compute residuals.
+        'params' contains camera extrinsic only"""
+        nCamIntrinsic = 3
+        nCamExtrinsic = 6
+        nCamCentroid = 2
+        nCamUnique = nCamExtrinsic + nCamCentroid
+        nCamParams = n_cameras * nCamUnique + nCamIntrinsic
+
+        cam_shared_intrinsic = params[:nCamIntrinsic]
+        camera_extrinsic = params[nCamIntrinsic:nCamIntrinsic+n_cameras*nCamExtrinsic].reshape((n_cameras, nCamExtrinsic))
+        camera_centroid = params[nCamIntrinsic+n_cameras*nCamExtrinsic : nCamParams].reshape((n_cameras, nCamCentroid))
+        camera_params = np.concatenate((camera_extrinsic, np.tile(cam_shared_intrinsic, (n_cameras,1)), camera_centroid), axis=1)
+
+        points_proj = self.project(points_3d[point_indices], camera_params[camera_indices])
+        weighted_residual = pointWeights * (points_proj - points_2d)
+        return weighted_residual.ravel()
+
+
+    # added by RJ
+    def bundle_adjustment_camonly_shared(self):
+        """ Returns the bundle adjusted parameters, in this case the optimized rotation and translation vectors"""
+        numCameras = self.cameraArray.shape[0]
+        numPoints = self.points3D.shape[0]
+
+        nCamIntrinsic = 3
+        nCamExtrinsic = 6
+        nCamCentroid = 2
+        nCamUnique = nCamExtrinsic + nCamCentroid
+        nCamParams = numCameras * nCamUnique + nCamIntrinsic
+
+        camera_shared_intrinsic = np.mean(self.cameraArray[:, 6:9], axis=0).ravel()
+        camera_extrinsic = self.cameraArray[:,:6].ravel()
+        camera_centroids = self.cameraArray[:,9:].ravel()
+
+        x0 = np.hstack((camera_shared_intrinsic, camera_extrinsic, camera_centroids))
+
+        res = least_squares(self.fun_camonly_shared, x0, verbose=2, ftol=1e-4, method='trf',
+                            args=(numCameras, numPoints, self.cameraIndices, self.point2DIndices, self.points2D, self.pointWeights, self.points3D, camera_shared_intrinsic))
+
+        cam_shared_intrinsic = res.x[:nCamIntrinsic]
+        camera_extrinsic = res.x[nCamIntrinsic:nCamIntrinsic + numCameras * nCamExtrinsic].reshape((numCameras, nCamExtrinsic))
+        camera_centroid = res.x[nCamIntrinsic+numCameras*nCamExtrinsic : nCamParams].reshape((numCameras, nCamCentroid))
+        camera_params = np.concatenate((camera_extrinsic, np.tile(cam_shared_intrinsic, (numCameras, 1)), camera_centroid), axis=1)
+
+        self.cameraArray = camera_params
+        return res
+
     def fun_transform_points_3d(self, params, numCameras, n_points, camera_params, camera_indices, point_indices, points_2d, pointWeights, points_3d):
         r = params.reshape(3,4)
         r = np.vstack((r, [0, 0, 0, 1]))

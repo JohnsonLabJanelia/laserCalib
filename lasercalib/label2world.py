@@ -8,14 +8,16 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from camera_visualizer import CameraVisualizer
 from scipy.spatial.transform import Rotation as R
+from convert_params import *
 
 from scipy.sparse import lil_matrix
 from scipy.optimize import least_squares
 from datetime import date
 from rigid_body import rigid_transform_3D
 
-my_palette = sns.color_palette("pastel", 4)
+nCams= 8
 root_dir = "/home/jinyao/Calibration/newrig8"
+my_palette = sns.color_palette("pastel", nCams)
 
 with open(root_dir + '/results/sba_blender.pkl', 'rb') as f:
     sba = pickle.load(f)
@@ -49,19 +51,30 @@ padding = np.ones((1,nPts), dtype="float")
 # target_pts = np.vstack((rig_pts, padding))
 
 #points [x, y, z]  from original space 
-label_pts = np.array([[151.176,107.836,126.815],
-[153.721,-113.977,126.804],
-[-180.224,-113.599,126.461],
-[-182.32,107.832,126.666]]).transpose()
+
+# label_pts = np.array([[151.176,107.836,126.815],
+# [153.721,-113.977,126.804],
+# [-180.224,-113.599,126.461],
+# [-182.32,107.832,126.666]]).transpose()
+# input_pts = np.vstack((label_pts, padding))
+
+label_pts = np.array([[-780.618, 741.511, 586.724], [-792.757, -748.489, 599.694], [706.665, -773.379, 607.877], [721.711, 725.702, 601.463]]).transpose()
 input_pts = np.vstack((label_pts, padding))
 
 
 #points [x, y, z] from target space 
-rig_pts = np.array([[-90.0, 135.0, 0.0],
-[90.0, 135.0, 0.0],
-[90.0, -135.0, 0.0],
-[-90.0, -135.0, 0.0]]).transpose()
+# rig_pts = np.array([[-90.0, 135.0, 0.0],
+# [90.0, 135.0, 0.0],
+# [90.0, -135.0, 0.0],
+# [-90.0, -135.0, 0.0]]).transpose()
+# target_pts = np.vstack((rig_pts, padding))
+
+
+rig_pts = np.array([[-762.0, 762.0, 0.0], [-762.0, -762.0, 0.0], [762, -762, 0.0], [762, 762, 0.0]]).transpose()
 target_pts = np.vstack((rig_pts, padding))
+edge_len = 1524.0
+
+
 
 # def fun(params):
 #     r = params.reshape(3,4)
@@ -131,9 +144,8 @@ print(transformed_pts)
 # mag = np.sqrt(chess_board_edge.dot(chess_board_edge))
 
 
-mag = np.abs(transformed_pts[0, 1] - transformed_pts[0, 0])
-
-scale_mag = np.abs(180.0 / mag)
+mag = np.abs(transformed_pts[1, 0] - transformed_pts[0, 0])
+scale_mag = np.abs(edge_len / mag)
 scale_eye = np.eye(4) * scale_mag
 scale_eye[3,3] = 1
 print(scale_eye)
@@ -193,10 +205,9 @@ laser_pts_transformed = np.dot(transformation_matrix, laser_pts)
 
 
 
-nCams = 4
 camList = []
 for i in range(nCams):
-    camList.append(pySBA.unconvertParams(sba.cameraArray[i,:]))
+    camList.append(sba_to_readable_format(sba.cameraArray[i,:]))
 
 
 x, y, z = np.array([[-500,0,0],[0,-500,0],[0,0,-500]])
@@ -224,7 +235,7 @@ for i, cam in enumerate(camList):
     cam_pts_label_space[:,i] = t_inv
     cam_ex_rig_space[:,:,i] = np.dot(transformation_matrix, ex)
 
-    visualizer = MyCamPoseVisualizer(fig, ax[0])
+    visualizer = CameraVisualizer(fig, ax[0])
     visualizer.extrinsic2pyramid(ex, my_palette[i], 200)
 
 ax[0].scatter(laser_pts[0,:], laser_pts[1,:], laser_pts[2,:], color='m', alpha=0.1)
@@ -285,18 +296,15 @@ ax[1].set_zlim([-2400, 2400])
 ax[1].set_title("rig space")
 plt.show()
 
-############################## Loading current best cam params
 
-picklefile = open('../calibres/sba_blender_2022-10-25.pkl', 'rb')
-sba_rigspace = pickle.load(picklefile)
-picklefile.close()
+############################## Loading current best cam params
+with open(root_dir + "/results/sba_blender.pkl", 'rb') as f:
+    sba_rigspace = pickle.load(f)
 
 x = PrettyTable()
 for row in sba_rigspace.cameraArray:
     x.add_row(row)
 print(x)
-
-
 
 
 #############################
@@ -311,7 +319,7 @@ sba.bundle_adjustment_camonly_shared()
 
 new_camList = []
 for i in range(nCams):
-    new_camList.append(pySBA.unconvertParams(sba.cameraArray[i,:]))
+    new_camList.append(sba_to_readable_format(sba.cameraArray[i,:]))
 
 fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
@@ -339,8 +347,6 @@ for row in sba.cameraArray:
     x.add_row(row)
 print(x)
     
-# for i in range(nCams):
-#     sba.cameraArray[i, 6:9] = [1777.777, -0.015, -0.015]
 
 sba.bundleAdjust_sharedcam()
 
@@ -378,30 +384,16 @@ plt.xlabel('Reprojection Error')
 plt.title('shared Intrinsics')
 plt.show()
 
-# sba.saveCamVecs()
-# picklefile = open('../calibres/sba_blender_rigspace', 'wb')
-# pickle.dump(sba, picklefile)
-# picklefile.close()
 
 
 camList = []
 for i in range(nCams):
-    camList.append(pySBA.unconvertParams(sba.cameraArray[i,:]))
+    camList.append(sba_to_readable_format(sba.cameraArray[i,:]))
 
-outParams = np.full((len(camList), 25), np.NaN)
-for nCam in range(len(camList)):
-    p = camList[nCam]
-    k = np.transpose(p['K']).ravel()
-    r_m = np.transpose(p['R']).ravel()
-    t = p['t']
-    d = np.hstack((p['d'], np.array([0.0, 0.0])))
-    outParams[nCam,:] = np.hstack((k, r_m, t, d))
+outParams = readable_to_red_format(camList)
+np.savetxt(root_dir + "/results/calibration_rigspace.csv", outParams, delimiter=',', newline=',\n', fmt='%f')
 
 
-np.savetxt('../calibres/calibration_{}_rigspace.csv'.format(str(date.today())), outParams, delimiter=',', newline=',\n', fmt='%f')
-
-
-################################
 
 
 
