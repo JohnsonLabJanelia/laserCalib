@@ -17,10 +17,13 @@ nCams= 8
 root_dir = "/home/jinyao/Calibration/newrig8"
 my_palette = sns.color_palette("pastel", nCams)
 # 4 feature points on a square
-label_pts = np.array([[-780.618, 741.511, 586.724], [-792.757, -748.489, 599.694], [706.665, -773.379, 607.877], [721.711, 725.702, 601.463]]).transpose()
 rig_pts = np.array([[-692.0, 692.0, 0.0], [-692.0, -692.0, 0.0], [692, -692, 0.0], [692, 692, 0.0]]).transpose()
-##
 
+#label_pts = np.array([[-780.618, 741.511, 586.724], [-792.757, -748.489, 599.694], [706.665, -773.379, 607.877], [721.711, 725.702, 601.463]]).transpose()
+with open(root_dir + "/results/aruco_center_3d.pkl", "rb") as f:
+    label_pts = pkl.load(f)   
+label_pts = label_pts.transpose()
+##
 
 with open(root_dir + '/results/sba_blender.pkl', 'rb') as f:
     sba = pickle.load(f)

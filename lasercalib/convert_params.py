@@ -62,9 +62,7 @@ def load_from_blender(filename, nCams):
         cameraArray[i][9:11] = [1604, 1100]
     return cameraArray
 
-
-
-def save_for_aruco(save_root, nCams, cam):
+def red_to_aruco(save_root, nCams, cam):
     for cam_idx in range(nCams):
         intrinsicMatrix = np.asarray(cam[cam_idx][0:9]).reshape(3, 3)
         intrinsicMatrix = intrinsicMatrix

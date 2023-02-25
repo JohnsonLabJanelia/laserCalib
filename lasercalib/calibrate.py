@@ -9,13 +9,13 @@ from prettytable import PrettyTable
 import pySBA
 from camera_visualizer import CameraVisualizer
 from convert_params import load_from_blender
+from convert_params import *
 
 ## inputs to the file
 root_dir = "/home/jinyao/Calibration/newrig8"
 cam_idx_3dpts = 4
 a = 1.0
-## 
-
+ 
 with open(root_dir + "/results/centroids.pkl", 'rb') as file:
     pts = pkl.load(file)
 
@@ -24,7 +24,10 @@ pts = np.flip(pts, axis=1)
 nPts = pts.shape[0]
 nCams = pts.shape[2]
 my_palette = sns.color_palette("rocket_r", nCams)
+
+## blender initialization
 cameraArray = load_from_blender(root_dir + "/results/camera_dicts.pkl", nCams)
+##
 
 def sba_print(sba, nCams):
     x = PrettyTable()
@@ -125,8 +128,21 @@ sba_print(sba, nCams)
 sba.bundleAdjust()
 sba_print(sba, nCams)
 
+
+## saving 
+camList = []
+for i in range(nCams):
+    camList.append(sba_to_readable_format(sba.cameraArray[i,:]))
+with open(root_dir + "/results/calibration_blender.pkl", 'wb') as f:
+    pkl.dump(camList, f)
+
+# save for red
+outParams = readable_to_red_format(camList)
+np.savetxt(root_dir + '/results/calibration_red.csv', outParams, delimiter=',', newline=',\n', fmt='%f')
+
+
 output_file = root_dir + "/results/sba_blender.pkl"
 with open(output_file, 'wb') as f:
     pkl.dump(sba, f)
 
-print("Done fitting, saved to: {}".format(output_file))
+print("Done fitting, saved to: {}".format(root_dir + "/results"))

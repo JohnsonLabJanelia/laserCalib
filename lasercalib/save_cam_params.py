@@ -23,4 +23,4 @@ save_root = root_dir + "/results/calibration_aruco/"
 if not os.path.exists(save_root):
    os.makedirs(save_root)
 
-save_for_aruco(save_root, 8, outParams)
+red_to_aruco(save_root, 8, outParams)
