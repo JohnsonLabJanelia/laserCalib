@@ -302,9 +302,14 @@ plt.show()
 
 
 
+
+
 camList = []
 for i in range(nCams):
     camList.append(sba_to_readable_format(sba.cameraArray[i,:]))
+
+with open(root_dir + "/results/calibration_rigspace.pkl", 'wb') as f:
+    pkl.dump(camList, f)
 
 outParams = readable_to_red_format(camList)
 np.savetxt(root_dir + "/results/calibration_rigspace.csv", outParams, delimiter=',', newline=',\n', fmt='%f')
