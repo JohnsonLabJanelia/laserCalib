@@ -6,6 +6,7 @@ from skimage import measure
 import numpy as np
 from feature_detection import green_laser_finder
 import pickle as pkl
+import argparse
 
 def concat_vh(list_2d):
     return cv2.vconcat([cv2.hconcat(list_h) for list_h in list_2d])
@@ -14,7 +15,7 @@ class VideoGet:
     def __init__(self, src_dir, q, cam_idx, laser=False, aruco=False):
         
         self.src_dir = src_dir
-        video_source = src_dir + "/Cam{}.mp4".format(cam_idx)
+        video_source = src_dir + "/aruco/Cam{}.mp4".format(cam_idx)
         print(video_source)
         self.stream = cv2.VideoCapture(video_source)
         if (self.stream.isOpened()== False): 
@@ -28,7 +29,8 @@ class VideoGet:
         self.aruco = aruco
         self.cam_idx = cam_idx
         if self.aruco:
-            cam_params_file = src_dir + "/calibration_aruco/Cam{}.yaml".format(i)
+            cam_params_file = src_dir + "/results/calibration_aruco/Cam{}.yaml".format(i)
+            print(cam_params_file)
             self.cam_matrix, self.distortion = self.load_camera_intrinsic(cam_params_file)
             # keep a moving average
             self.corner_average = {
@@ -40,8 +42,8 @@ class VideoGet:
 
     def load_camera_intrinsic(self, cam_params_file):
         fs = cv2.FileStorage(cam_params_file, cv2.FILE_STORAGE_READ)
-        m_matrix_coefficients = fs.getNode("intrinsicMatrix")
-        m_distortion_coefficients = fs.getNode("distortionCoefficients")
+        m_matrix_coefficients = fs.getNode("camera_matrix")
+        m_distortion_coefficients = fs.getNode("distortion_coefficients")
         cam_matrix = m_matrix_coefficients.mat().T
         distortion = m_distortion_coefficients.mat()[0]
         return cam_matrix, distortion
@@ -118,22 +120,30 @@ class VideoGet:
     def stop(self):
         # save the corners 
         if self.aruco:
-            with open(self.src_dir + "/calibration_aruco/Cam{}_aruco.pkl".format(self.cam_idx), 'wb') as f:
+            with open(self.src_dir + "/results/Cam{}_aruco.pkl".format(self.cam_idx), 'wb') as f:
                 pkl.dump(self.corner_average, f)
             print("Aruco corner detection saved.")
         self.stopped = True
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--root_dir', type=str, required=True)
+parser.add_argument('--n_cams', type=int, required=True)
+parser.add_argument('--mode', choices=['laser', 'aruco'], required=True)
+args = parser.parse_args()
+
+num_cams = args.n_cams
 view_queues = []
-num_cams = 8
 
 for i in range(num_cams):
     view_queues.append(queue.Queue())
 
 threadpool = []
 for i in range(num_cams):
-    source_dir = "/home/jinyao/Calibration/newrig8/aruco_detection"
-    threadpool.append(VideoGet(source_dir, view_queues[i], i, False, True))
+    if args.mode == "aruco":
+        threadpool.append(VideoGet(args.root_dir, view_queues[i], i, laser=False, aruco=True))
+    else:
+        threadpool.append(VideoGet(args.root_dir, view_queues[i], i, laser=True, aruco=False))
 
 for thread in threadpool:
     thread.start()
@@ -158,8 +168,15 @@ while True:
     if (img is None):
             break
     
-    img_tile = concat_vh([[imgs[0], imgs[1], imgs[2], imgs[3]], 
-                        [imgs[4], imgs[5], imgs[6], imgs[7]]])
+    layout = []
+    for i in range(num_cams):
+        if i % 4 == 0:
+            temp = []
+        temp.append(imgs[i])
+        if i % 4 == 3:
+            layout.append(temp.copy())
+        i = i + 1
+    img_tile = concat_vh(layout)
     cv2.imshow('Frame', img_tile)
 
 

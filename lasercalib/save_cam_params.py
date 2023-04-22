@@ -3,24 +3,28 @@ import pickle
 from convert_params import *
 import cv2 
 import os
+import argparse
 
-root_dir = "/home/jinyao/Calibration/newrig8"
-nCams = 8
+parser = argparse.ArgumentParser()
+parser.add_argument('--root_dir', type=str, required=True)
+parser.add_argument('--n_cams', type=int, required=True)
+args = parser.parse_args()
 
-with open(root_dir + "/results/sba_blender.pkl", 'rb') as f:
+
+with open(args.root_dir + "/results/sba_blender.pkl", 'rb') as f:
     sba = pickle.load(f)
 
 camList = []
-for i in range(nCams):
+for i in range(args.n_cams):
     camList.append(sba_to_readable_format(sba.cameraArray[i,:]))
 
 # save for red
 outParams = readable_to_red_format(camList)
-np.savetxt(root_dir + '/results/calibration_red.csv', outParams, delimiter=',', newline=',\n', fmt='%f')
+np.savetxt(args.root_dir + '/results/calibration_red.csv', outParams, delimiter=',', newline=',\n', fmt='%f')
 
 # save for aruco detection
-save_root = root_dir + "/results/calibration_aruco/"
+save_root = args.root_dir + "/results/calibration_aruco/"
 if not os.path.exists(save_root):
    os.makedirs(save_root)
 
-red_to_aruco(save_root, 8, outParams)
+red_to_aruco(save_root, args.n_cams, outParams)

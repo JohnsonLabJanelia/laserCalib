@@ -10,11 +10,19 @@ import pySBA
 from camera_visualizer import CameraVisualizer
 from convert_params import load_from_blender
 from convert_params import *
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--root_dir', type=str, required=True)
+parser.add_argument('--cam_id_for_3d_init', type=int, required=True)
+parser.add_argument('--shift_3d', type=float, default=1.0)
+
+args = parser.parse_args()
 
 ## inputs to the file
-root_dir = "/home/jinyao/Calibration/newrig8"
-cam_idx_3dpts = 4
-a = 1.0
+root_dir = args.root_dir
+cam_idx_3dpts = args.cam_id_for_3d_init
+shift_3d = args.shift_3d
  
 with open(root_dir + "/results/centroids.pkl", 'rb') as file:
     pts = pkl.load(file)
@@ -116,8 +124,8 @@ for i in range(nPts):
         points_3d[i, 0:2] = inPts[i, :, cam_idx_3dpts]
 
 # # # center the world points
-points_3d[:,0] = a * (points_3d[:,0] - 1604)
-points_3d[:,1] = a * (points_3d[:,1] - 1100)
+points_3d[:,0] = shift_3d * (points_3d[:,0] - 1604)
+points_3d[:,1] = shift_3d * (points_3d[:,1] - 1100)
 
 sba = pySBA.PySBA(cameraArray, points_3d, points_2d, camera_ind, point_ind)
 sba_print(sba, nCams)

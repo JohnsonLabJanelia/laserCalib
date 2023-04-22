@@ -1,20 +1,26 @@
 import numpy as np
 import pickle as pkl
 import cv2 
-import pdb
+import argparse
 
-root_dir = "/home/jinyao/Calibration/newrig8"
-nCams = 8
+parser = argparse.ArgumentParser()
+parser.add_argument('--root_dir', type=str, required=True)
+parser.add_argument('--n_cams', type=int, required=True)
+parser.add_argument('--side_len', type=float, required=120.0)
 
-with open(root_dir + "/results/calibration_rigspace.pkl", "rb") as f:
+args = parser.parse_args()
+
+
+nCams = args.n_cams
+
+with open(args.root_dir + "/results/calibration_blender.pkl", "rb") as f:
     camList = pkl.load(f)
 
 aruco_loc = []
 for i in range(nCams):
-    with open(root_dir + "/results/aruco_corner_loc/Cam{}_aruco.pkl".format(i), 'rb') as f:
+    with open(args.root_dir + "/results/Cam{}_aruco.pkl".format(i), 'rb') as f:
         one_camera = pkl.load(f)
         aruco_loc.append(one_camera)
-
 
 features = []
 for cam in aruco_loc:
@@ -22,13 +28,9 @@ for cam in aruco_loc:
     for marker_id, marker_coord in cam.items():
         temp_list.append(marker_coord)
     features.append(np.asarray(temp_list))
-
 features = np.asarray(features)
 
 undistorted_pts = []
-
-
-
 for cam_idx in range(nCams):
     temp_list = []
     for mk_idx in range(4):        
@@ -42,9 +44,6 @@ for cam_idx in range(nCams):
 
 undistorted_pts = np.asarray(undistorted_pts)    
         
-# pdb.set_trace()
-
-
 features_3d = []
 
 # for all corners of all marker (4*num_markers)
@@ -89,8 +88,8 @@ for mk_idx in range(4):
 pts = []
 for pt in delta_pts:
     pts.append(np.linalg.norm(pt))
-    print(np.linalg.norm(pt))
+    print("side length (mm) :", np.linalg.norm(pt))
 
-print(np.mean(pts)/150.0)
-# with open(root_dir + "/results/aruco_center_3d.pkl", 'wb') as f:
-#     pkl.dump(features_3d, f)
+print("Ratio of estimated and real side length of aruco marker: ", np.mean(pts)/args.side_len)
+with open(args.root_dir + "/results/aruco_corners_3d.pkl", 'wb') as f:
+    pkl.dump(features_3d, f)

@@ -12,7 +12,7 @@ class SingleMovieManager(threading.Thread):
         self.thread_name = "Thread-" + str(self.threadID)
         self.root_dir = root_dir
         self.cam_name = cam_name
-        self.movie_path = self.root_dir + "/" + self.cam_name + ".mp4"
+        self.movie_path = self.root_dir + "/movies/" + self.cam_name + ".mp4"
         self.results_file = self.root_dir + "/results/" + self.cam_name + "_centroids.pkl"
         self.frameRange = frame_range
         self.nFramesAnalyzed = self.frameRange[1] - self.frameRange[0]

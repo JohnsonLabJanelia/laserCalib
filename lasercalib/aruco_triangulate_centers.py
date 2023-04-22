@@ -2,15 +2,23 @@ import numpy as np
 import pickle as pkl
 import cv2 
 
-root_dir = "/home/jinyao/Calibration/newrig8"
-nCams = 8
 
-with open(root_dir + "/results/calibration_blender.pkl", "rb") as f:
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--root_dir', type=str, required=True)
+parser.add_argument('--n_cams', type=int, required=True)
+args = parser.parse_args()
+
+
+nCams = args.n_cams
+
+with open(args.root_dir + "/results/calibration_blender.pkl", "rb") as f:
     camList = pkl.load(f)
 
 aruco_loc = []
 for i in range(nCams):
-    with open(root_dir + "/results/aruco_corner_loc/Cam{}_aruco.pkl".format(i), 'rb') as f:
+    with open(args.root_dir + "/results/Cam{}_aruco.pkl".format(i), 'rb') as f:
         one_camera = pkl.load(f)
         aruco_loc.append(one_camera)
 
@@ -63,5 +71,5 @@ for center_idx in range(4):
 pts_3d = np.asarray(pts_3d)
 print(pts_3d)
 
-with open(root_dir + "/results/aruco_center_3d.pkl", 'wb') as f:
+with open(args.root_dir + "/results/aruco_center_3d.pkl", 'wb') as f:
     pkl.dump(pts_3d, f)
