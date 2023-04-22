@@ -1,15 +1,12 @@
 import numpy as np
 import pickle as pkl
 import cv2 
-
-
 import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--root_dir', type=str, required=True)
 parser.add_argument('--n_cams', type=int, required=True)
 args = parser.parse_args()
-
 
 nCams = args.n_cams
 
@@ -47,7 +44,7 @@ for center_idx in range(4):
     # triangulation 
     # https://filebox.ece.vt.edu/~jbhuang/teaching/ece5554-4554/fa17/lectures/Lecture_15_StructureFromMotion.pdf
     # https://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
-    A = np.zeros([16, 4])
+    A = np.zeros([nCams*2, 4])
     for cam_idx in range(nCams):
         proj_matrix = np.zeros((3, 4))
         proj_matrix[0:3, 0:3] = camList[cam_idx]['R'].T
@@ -69,7 +66,7 @@ for center_idx in range(4):
 
 # 4 * 3 
 pts_3d = np.asarray(pts_3d)
-print(pts_3d)
+print("3d aruco centers: \n", pts_3d)
 
 with open(args.root_dir + "/results/aruco_center_3d.pkl", 'wb') as f:
     pkl.dump(pts_3d, f)

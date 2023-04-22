@@ -42,11 +42,18 @@ python save_cam_params.py --n_cams=16 --root_dir=/home/user/Calibration/16cam
 python movie_viewer.py --n_cams=16 --root_dir=/home/user/Calibration/16cam --mode aruco
 ```
 Press `p` to pause, press `q` to quit, and the aruco corner will be saved. Make sure all the corners are detected. 
-8. Run `aruco_triangulate_*.py` to triangulate corresponding points from aruco marker. `aruco_triangulate_center.py` triangulate the centers of aruco markers, while `aruco_triangulate_corners.py` triangulate all the corners of the aruco markers.  
+
+8. Run `aruco_triangulate_*.py` to triangulate corresponding points from aruco marker. `aruco_triangulate_center.py` triangulate the centers of aruco markers, while `aruco_triangulate_corners.py` triangulate all the corners of the aruco markers, and epirically estiamte the scaling factor using ground truth side length of aruco marker (side length in millimeter).  
 ```
 python aruco_triangulate_corners.py --n_cams=16 --root_dir=/home/user/Calibration/16cam --side_len=120
 ```
-Note side length of aruco marker in millimeter. 
+```
+python aruco_triangulate_centers.py --n_cams=16 --root_dir=/home/user/Calibration/16cam
+```
+9. Run `label2world.py` to rotate the coordinate to desired world coordinate. 
+```
+python label2world.py --n_cams=16 --root_dir=/home/user/Calibration/16cam --refit False
+```
 
 Some utility function:
 1. `movie_viewer.py`: visualize laser detection algorithm, `python movie_viewer.py --n_cams=16 --root_dir=/home/user/Calibration/16cam --mode laser`. 
