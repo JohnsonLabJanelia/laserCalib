@@ -6,6 +6,8 @@ def get_inverse_transformation(rotation_matrix, translation):
     return r_inv, t_inv
 
 def rigid_transform_3D(A, B):
+    # https://nghiaho.com/?page_id=671
+    # https://github.com/nghiaho12/rigid_transform_3D/blob/master/rigid_transform_3D.py
     # Input: expects 3xN matrix of points
     # Returns R,t
     # R = 3x3 rotation matrix

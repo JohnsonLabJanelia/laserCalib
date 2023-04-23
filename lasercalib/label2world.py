@@ -12,14 +12,14 @@ from convert_params import *
 from datetime import date
 from rigid_body import rigid_transform_3D
 import argparse
+from sba_print import sba_print
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--root_dir', type=str, required=True)
 parser.add_argument('--n_cams', type=int, required=True)
-parser.add_argument('--refit', type=bool, required=True)
+parser.add_argument('--refit', type=int, required=True)
 
 args = parser.parse_args()
-
 root_dir = args.root_dir
 nCams = args.n_cams
 
@@ -155,7 +155,7 @@ for i, cam in enumerate(camList):
     t_f = cam["t"]
     t_inv = -np.dot(r_f, t_f)
 
-    ex[:3,:3] = cam["R"]
+  
     ex[:3, 3] = t_inv
 
     cam_pts_label_space[:,i] = t_inv
@@ -190,11 +190,11 @@ ax.append(fig.add_subplot(1, 2, 2, projection='3d'))
 ax[1].scatter(laser_pts_transformed[0,:], laser_pts_transformed[1,:], laser_pts_transformed[2,:], color="m", alpha=0.1)
 ax[1].scatter(cam_pts_rig_space[0,:], cam_pts_rig_space[1,:], cam_pts_rig_space[2,:], color="r")
 ax[1].plot(ref_pts_rig_space[0,:], ref_pts_rig_space[1,:], ref_pts_rig_space[2,:], color="orange", linewidth=5, marker="o", markerfacecolor="k")
-
-
 ax[1].quiver(x,y,z,u,v,w,arrow_length_ratio=0.1, color="black")
 
-for i, cam in enumerate(camList):
+
+new_camList = []
+for i in range(nCams):
     ex = np.squeeze(cam_ex_rig_space[:,:,i])
     visualizer = CameraVisualizer(fig, ax[1])
     visualizer.extrinsic2pyramid(ex, my_palette[i], 200)
@@ -206,15 +206,17 @@ for i, cam in enumerate(camList):
     # print("r_vec: ", r_vec)
     # t_vec = np.dot(-this_r.T, ex[:3, 3])
     # print("t_vec: ", t_vec)
-
-    print("cam" + str(i))
-    print(ex)
     this_r = ex[:3,:3].copy()
     r_vec = R.from_matrix(this_r).as_rotvec()
-    print("r_vec: ", r_vec)
     t_vec = np.dot(this_r, ex[:3, 3])
-    print("t_vec: ", t_vec)
+    cam_param_rigspace = {}
+    cam_param_rigspace['K'] = camList[i]['K']
+    cam_param_rigspace['R'] = this_r
+    cam_param_rigspace['t'] = t_vec
+    print("Cam {}, R {}, t {}".format(i, this_r, t_vec))
 
+    cam_param_rigspace['d'] = camList[i]['d']
+    new_camList.append(cam_param_rigspace)
 
 ax[1].set_xlim([-2400, 2400])
 ax[1].set_ylim([-2400, 2400])
@@ -222,113 +224,32 @@ ax[1].set_zlim([-2400, 2400])
 ax[1].set_title("rig space")
 plt.show()
 
-
-
-if args.refit:
-    # save data here
-    pass
-else:
-    ############################## Loading current best cam params
+if args.refit == 1:
+    # Loading current best cam params
     with open(root_dir + "/results/sba_blender.pkl", 'rb') as f:
         sba_rigspace = pickle.load(f)
 
-    x = PrettyTable()
-    for row in sba_rigspace.cameraArray:
-        x.add_row(row)
-    print(x)
-
-
-    #############################
     """
     This code block works to put the camera parameters in rig space - but is messy (does bundle adjustment again)
     """
-
     sba.points3D = laser_pts_transformed.copy()[:3,:].transpose()
 
     sba.bundle_adjustment_camonly()
     # sba.bundle_adjustment_camonly_shared()
+    # sba.bundleAdjust(1e-5)
+    sba_print(sba, nCams, "Refit camera params only", color_palette=my_palette)
 
     new_camList = []
     for i in range(nCams):
         new_camList.append(sba_to_readable_format(sba.cameraArray[i,:]))
-
-    fig = plt.figure()
-    ax = fig.add_subplot(projection='3d')
-
-    for i, cam in enumerate(new_camList):
-        ex = np.eye(4)
-        
-        r_f = cam["R"]
-        r_inv = r_f.T
-
-        t_f = cam["t"]
-        t_inv = -np.dot(r_f, t_f)
-
-        ex[:3,:3] = cam["R"]
-        ex[:3, 3] = t_inv
-
-        visualizer = CameraVisualizer(fig, ax)
-        visualizer.extrinsic2pyramid(ex, my_palette[i], 200)
-
-    ax.scatter(sba.points3D[:,0], sba.points3D[:,1], sba.points3D[:,2], color='m', alpha=0.1)
-    ax.set_xlim([-2400, 2400])
-    ax.set_ylim([-2400, 2400])
-    ax.set_zlim([-2400, 2400])
-    plt.show()
-
-    x = PrettyTable()
-    for row in sba.cameraArray:
-        x.add_row(row)
-    print(x)
-        
-
-    sba.bundleAdjust()
-
-    x = PrettyTable()
-    for row in sba.cameraArray:
-        x.add_row(row)
-    print(x)
-
-    fig = plt.figure()
-    ax = fig.add_subplot(projection='3d')
-    ax.scatter(sba.points3D[:,0], sba.points3D[:,1], sba.points3D[:,2])
-    ax.set_xlabel('X Label')
-    ax.set_ylabel('Y Label')
-    ax.set_zlabel('Z Label')
-    plt.title('initial cam params and 3D points')
-    for i in range(nCams):
-        r_f = R.from_rotvec(-sba.cameraArray[i, 0:3]).as_matrix().copy()
-        t_f = sba.cameraArray[i, 3:6].copy()
-        # get inverse transformation
-        r_inv = r_f.T    
-        t_inv = -np.matmul(r_f, t_f)    
-        ex = np.eye(4)
-        ex[:3,:3] = r_inv.T
-        ex[:3,3] = t_inv
-        visualizer = CameraVisualizer(fig, ax)
-        visualizer.extrinsic2pyramid(ex, my_palette[i], 200)
-    ax.set_xlim([-2400, 2400])
-    ax.set_ylim([-2400, 2400])
-    ax.set_zlim([-2400, 2400])
-    plt.show()
+        print("Cam {}, R {}, t {}".format(i, new_camList[i]['R'], new_camList[i]['t']))
 
 
-    r = sba.project(sba.points3D[sba.point2DIndices], sba.cameraArray[sba.cameraIndices]) - sba.points2D
-    r = np.sqrt(np.sum(r**2, axis=1))
-    plt.hist(r[r<np.percentile(r, 99)])
-    plt.xlabel('Reprojection Error')
-    plt.title('shared Intrinsics')
-    plt.show()
+# with open(root_dir + "/results/calibration_rigspace.pkl", 'wb') as f:
+#     pkl.dump(new_camList, f)
 
-    camList = []
-    for i in range(nCams):
-        camList.append(sba_to_readable_format(sba.cameraArray[i,:]))
-
-    with open(root_dir + "/results/calibration_rigspace.pkl", 'wb') as f:
-        pkl.dump(camList, f)
-
-    outParams = readable_to_red_format(camList)
-    np.savetxt(root_dir + "/results/calibration_rigspace.csv", outParams, delimiter=',', newline=',\n', fmt='%f')
+# outParams = readable_to_red_format(new_camList)
+# np.savetxt(root_dir + "/results/calibration_rigspace.csv", outParams, delimiter=',', newline=',\n', fmt='%f')
 
 
 

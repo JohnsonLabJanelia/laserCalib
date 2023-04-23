@@ -4,13 +4,11 @@ import matplotlib.pyplot as plt
 import pickle as pkl
 from datetime import date
 import seaborn as sns
-from scipy.spatial.transform import Rotation as R
-from prettytable import PrettyTable
 import pySBA
-from camera_visualizer import CameraVisualizer
 from convert_params import load_from_blender
 from convert_params import *
 import argparse
+from sba_print import sba_print
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--root_dir', type=str, required=True)
@@ -35,45 +33,6 @@ my_palette = sns.color_palette("rocket_r", nCams)
 
 ## blender initialization
 cameraArray = load_from_blender(root_dir + "/results/camera_dicts.pkl", nCams)
-##
-
-def sba_print(sba, nCams):
-    x = PrettyTable()
-    for row in sba.cameraArray:
-        x.add_row(row)
-    print(x)
-
-    r = sba.project(sba.points3D[sba.point2DIndices], sba.cameraArray[sba.cameraIndices]) - sba.points2D
-    print(r.shape)
-    r = np.sqrt(np.sum(r**2, axis=1))
-    plt.hist(r[r<np.percentile(r, 99)])
-    plt.xlabel('Reprojection Error')
-    plt.title('adjust points only')
-    plt.show()
-
-    fig = plt.figure()
-    ax = fig.add_subplot(projection='3d')
-    ax.scatter(sba.points3D[:,0], sba.points3D[:,1], sba.points3D[:,2])
-    ax.set_xlabel('X Label')
-    ax.set_ylabel('Y Label')
-    ax.set_zlabel('Z Label')
-    plt.title('adjust points only')
-    for i in range(nCams):
-        r_f = R.from_rotvec(-sba.cameraArray[i, 0:3]).as_matrix().copy()
-        t_f = sba.cameraArray[i, 3:6].copy()
-        # get inverse transformation
-        r_inv = r_f.T    
-        t_inv = -np.matmul(r_f, t_f)    
-        ex = np.eye(4)
-        ex[:3,:3] = r_inv.T
-        ex[:3,3] = t_inv
-        visualizer = CameraVisualizer(fig, ax)
-        visualizer.extrinsic2pyramid(ex, my_palette[i], 200)
-    ax.set_xlim((-1500, 1500))
-    ax.set_ylim((-1500, 1500))
-    ax.set_zlim((-100, 1500))
-    plt.show()
-
 
 keep = np.zeros(shape=(nPts,), dtype=bool)
 for i in range(nPts):
@@ -113,7 +72,6 @@ for i in range(nPts):
         points_2d[ind, :] = inPts[i, :, j].copy()
         ind += 1
 
-
 # prepare points_3d variable (initializing with 2d laser points in image space on cam4)
 points_3d = np.zeros(shape=(nPts, 3))
 for i in range(nPts):
@@ -128,14 +86,13 @@ points_3d[:,0] = shift_3d * (points_3d[:,0] - 1604)
 points_3d[:,1] = shift_3d * (points_3d[:,1] - 1100)
 
 sba = pySBA.PySBA(cameraArray, points_3d, points_2d, camera_ind, point_ind)
-sba_print(sba, nCams)
+sba_print(sba, nCams, "Initialization", color_palette=my_palette)
 
 sba.bundleAdjust_nocam()
-sba_print(sba, nCams)
+sba_print(sba, nCams, "Fit 3d Points only", color_palette=my_palette)
 
 sba.bundleAdjust()
-sba_print(sba, nCams)
-
+sba_print(sba, nCams, "Fit 3d Points and Camera Paramters", color_palette=my_palette)
 
 ## saving 
 camList = []

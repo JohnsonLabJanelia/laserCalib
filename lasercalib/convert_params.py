@@ -15,7 +15,6 @@ def readable_to_red_format(camList):
         outParams[nCam,:] = np.hstack((k, r_m, t, d))
     return outParams
 
-
 def sba_to_readable_format(camParamVec):
     thisK = np.full((3, 3), 0.0)
     thisK[0, 0] = camParamVec[6]
@@ -44,10 +43,9 @@ def getCameraArray(allCameras = ['lBack', 'lFront', 'lTop', 'rBack', 'rFront', '
     return cameraArray
 
 def load_from_blender(filename, nCams):
+    # import camera parameters from blender to cameraArray for pySBA
     with open(filename, 'rb') as file: 
         camera_params = pkl.load(file)
-
-    # import camera parameters from blender to cameraArray for pySBA
     cameraArray = np.zeros(shape=(nCams, 11))
     for i in range(nCams):
         rotation_matrix = np.zeros((3, 3))
