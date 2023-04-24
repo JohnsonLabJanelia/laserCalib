@@ -29,7 +29,7 @@ python find_laser_points.py --n_cams=8 --root_dir=/home/user/Calibration/16cam -
 ```
 python calibrate.py --root_dir=/home/user/Calibration/16cam --cam_id_for_3d_init 4
 ```
-The calibration result is saved in `results/sba_blender.pkl`.
+The calibration result is saved in `results/sba.pkl`.
 Note: 
 - It is probably important to initialize these camera parameters in the ballpark of the expected output. These calibration parameters could be estimated from a previous calibration or from a drawing/digital twin of the rig. To innitialize camera postions from blender model, put the `camera_dicts.pkl` in `results`.  
 - You will also need to provide an initial guess of the 3D world coordinates for each laser pointer observation. We simply used the pixel location of the extracted laser pointer centroids from one of our cameras (the central ceiling camera; blue camera in image below).  

@@ -10,7 +10,7 @@ args = parser.parse_args()
 
 nCams = args.n_cams
 
-with open(args.root_dir + "/results/calibration_blender.pkl", "rb") as f:
+with open(args.root_dir + "/results/calibration.pkl", "rb") as f:
     camList = pkl.load(f)
 
 aruco_loc = []

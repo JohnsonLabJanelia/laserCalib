@@ -99,7 +99,7 @@ sba_print(sba, nCams, "Fit 3d Points and Camera Paramters", color_palette=my_pal
 camList = []
 for i in range(nCams):
     camList.append(sba_to_readable_format(sba.cameraArray[i,:]))
-with open(root_dir + "/results/calibration_blender.pkl", 'wb') as f:
+with open(root_dir + "/results/calibration.pkl", 'wb') as f:
     pkl.dump(camList, f)
 
 # save for red
@@ -107,7 +107,7 @@ outParams = readable_to_red_format(camList)
 np.savetxt(root_dir + '/results/calibration_red.csv', outParams, delimiter=',', newline=',\n', fmt='%f')
 
 
-output_file = root_dir + "/results/sba_blender.pkl"
+output_file = root_dir + "/results/sba.pkl"
 with open(output_file, 'wb') as f:
     pkl.dump(sba, f)
 

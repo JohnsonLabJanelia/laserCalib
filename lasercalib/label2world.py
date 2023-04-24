@@ -33,7 +33,7 @@ with open(root_dir + "/results/aruco_center_3d.pkl", "rb") as f:
 label_pts = label_pts.transpose()
 ##
 
-with open(root_dir + '/results/sba_blender.pkl', 'rb') as f:
+with open(root_dir + '/results/sba.pkl', 'rb') as f:
     sba = pickle.load(f)
 
 # number of labeled points
@@ -235,7 +235,7 @@ plt.show()
 # This code block works to put the camera parameters in rig space
 # """
 # # Loading current best cam params
-# with open(root_dir + "/results/sba_blender.pkl", 'rb') as f:
+# with open(root_dir + "/results/sba.pkl", 'rb') as f:
 #     sba = pickle.load(f)
 
 # sba.points3D = laser_pts_transformed.copy()[:3,:].transpose()
@@ -250,14 +250,17 @@ plt.show()
 
 
 save_root = root_dir + "/rigspace/results/"
-with open(save_root + "calibration_rigspace.pkl", 'wb') as f:
+if not os.path.exists(save_root):
+   os.makedirs(save_root)
+
+with open(save_root + "calibration.pkl", 'wb') as f:
     pkl.dump(new_camList, f)
 
 outParams = readable_to_red_format(new_camList)
-np.savetxt(save_root + "calibration_rigspace.csv", outParams, delimiter=',', newline=',\n', fmt='%f')
+np.savetxt(save_root + "calibration_red.csv", outParams, delimiter=',', newline=',\n', fmt='%f')
 
 # save for aruco detection
 aruco_folder = save_root + "/calibration_aruco/"
 if not os.path.exists(aruco_folder):
-   os.makedirs(save_root)
+   os.makedirs(aruco_folder)
 red_to_aruco(aruco_folder, nCams, outParams)
