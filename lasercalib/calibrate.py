@@ -89,10 +89,10 @@ points_3d[:,1] = shift_3d * (points_3d[:,1] - 1100)
 sba = pySBA.PySBA(cameraArray, points_3d, points_2d, camera_ind, point_ind)
 sba_print(sba, nCams, "Initialization", color_palette=my_palette)
 
-sba.bundleAdjust_nocam()
+sba.bundleAdjust_nocam(1e-6)
 sba_print(sba, nCams, "Fit 3d Points only", color_palette=my_palette)
 
-sba.bundleAdjust()
+sba.bundleAdjust(1e-5)
 sba_print(sba, nCams, "Fit 3d Points and Camera Paramters", color_palette=my_palette)
 
 ## saving 
@@ -115,7 +115,7 @@ print("Done fitting, saved to: {}".format(root_dir + "/results"))
 
 # saving 
 camList = []
-for i in range(args.n_cams):
+for i in range(nCams):
     camList.append(sba_to_readable_format(sba.cameraArray[i,:]))
 
 # save for red
@@ -127,4 +127,4 @@ save_root = args.root_dir + "/results/calibration_aruco/"
 if not os.path.exists(save_root):
    os.makedirs(save_root)
 
-red_to_aruco(save_root, args.n_cams, outParams)
+red_to_aruco(save_root, nCams, outParams)

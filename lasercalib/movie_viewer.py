@@ -7,6 +7,7 @@ import numpy as np
 from feature_detection import green_laser_finder
 import pickle as pkl
 import argparse
+import os
 
 def concat_vh(list_2d):
     return cv2.vconcat([cv2.hconcat(list_h) for list_h in list_2d])
@@ -72,6 +73,7 @@ class VideoGet:
                     aruco_params = cv2.aruco.DetectorParameters_create() 
                     aruco_params.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
                     corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(frame_gray, aruco_dict, parameters=aruco_params)
+
                     if len(corners) > 0:
                         # flatten the ArUco IDs list
                         ids = ids.flatten()
@@ -79,10 +81,11 @@ class VideoGet:
                         for (markerCorner, markerID) in zip(corners, ids):
                             # rvec, tvec, markerPoints = cv2.aruco.estimatePoseSingleMarkers(markerCorner, 100, self.cam_matrix, self.distortion)
                             # cv2.drawFrameAxes(frame, self.cam_matrix, self.distortion, rot, trans, 100)  # Draw Axis
-                            if np.sum(self.corner_average[markerID]) == 0:
-                                self.corner_average[markerID] = markerCorner.reshape((4, 2))
-                            else:
-                                self.corner_average[markerID] = (markerCorner.reshape((4, 2)) + self.corner_average[markerID])/2
+                            if markerID in [0, 1, 2, 3]:
+                                if np.sum(self.corner_average[markerID]) == 0:
+                                    self.corner_average[markerID] = markerCorner.reshape((4, 2))
+                                else:
+                                    self.corner_average[markerID] = (markerCorner.reshape((4, 2)) + self.corner_average[markerID])/2
 
                     for markerID, markerCorner in self.corner_average.items():        
                         (topLeft, topRight, bottomRight, bottomLeft) = markerCorner
@@ -120,7 +123,10 @@ class VideoGet:
     def stop(self):
         # save the corners 
         if self.aruco:
-            with open(self.src_dir + "/results/Cam{}_aruco.pkl".format(self.cam_idx), 'wb') as f:
+            aruco_marker_folder = self.src_dir + "/results/aruco_corners/" 
+            if not os.path.exists(aruco_marker_folder):
+                os.makedirs(aruco_marker_folder)
+            with open(aruco_marker_folder + "Cam{}_aruco.pkl".format(self.cam_idx), 'wb') as f:
                 pkl.dump(self.corner_average, f)
             print("Aruco corner detection saved.")
         self.stopped = True

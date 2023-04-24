@@ -23,7 +23,7 @@ args = parser.parse_args()
 root_dir = args.root_dir
 nCams = args.n_cams
 
-my_palette = sns.color_palette("pastel", nCams)
+my_palette = sns.color_palette("rocket_r", nCams)
 # 4 feature points on a square
 rig_pts = np.array([[-692.0, 692.0, 0.0], [-692.0, -692.0, 0.0], [692, -692, 0.0], [692, 692, 0.0]]).transpose()
 #label_pts = np.array([[-780.618, 741.511, 586.724], [-792.757, -748.489, 599.694], [706.665, -773.379, 607.877], [721.711, 725.702, 601.463]]).transpose()
@@ -231,36 +231,36 @@ sns.palplot(my_palette)
 plt.show()
 
 
-# """
-# This code block works to put the camera parameters in rig space
-# """
-# # Loading current best cam params
-# with open(root_dir + "/results/sba.pkl", 'rb') as f:
-#     sba = pickle.load(f)
+"""
+This code block works to put the camera parameters in rig space
+"""
+# Loading current best cam params
+with open(root_dir + "/results/sba.pkl", 'rb') as f:
+    sba = pickle.load(f)
 
-# sba.points3D = laser_pts_transformed.copy()[:3,:].transpose()
+sba.points3D = laser_pts_transformed.copy()[:3,:].transpose()
 
-# sba.bundle_adjustment_camonly(1e-4)
-# sba_print(sba, nCams, "Refit", zlim=[-100, 1800], color_palette=my_palette)
+sba.bundle_adjustment_camonly(1e-4)
+sba_print(sba, nCams, "Refit", zlim=[-100, 1800], color_palette=my_palette)
 
-# new_camList = []
-# for i in range(nCams):
-#     new_camList.append(sba_to_readable_format(sba.cameraArray[i,:]))
-#     print("Cam {}, R {}, t_vec {}".format(i, new_camList[i]['R'], new_camList[i]['t']))
+new_camList = []
+for i in range(nCams):
+    new_camList.append(sba_to_readable_format(sba.cameraArray[i,:]))
+    print("Cam {}, R {}, t_vec {}".format(i, new_camList[i]['R'], new_camList[i]['t']))
 
 
-save_root = root_dir + "/rigspace/results/"
-if not os.path.exists(save_root):
-   os.makedirs(save_root)
+# save_root = root_dir + "/rigspace/results/"
+# if not os.path.exists(save_root):
+#    os.makedirs(save_root)
 
-with open(save_root + "calibration.pkl", 'wb') as f:
-    pkl.dump(new_camList, f)
+# with open(save_root + "calibration.pkl", 'wb') as f:
+#     pkl.dump(new_camList, f)
 
-outParams = readable_to_red_format(new_camList)
-np.savetxt(save_root + "calibration_red.csv", outParams, delimiter=',', newline=',\n', fmt='%f')
+# outParams = readable_to_red_format(new_camList)
+# np.savetxt(save_root + "calibration_red.csv", outParams, delimiter=',', newline=',\n', fmt='%f')
 
-# save for aruco detection
-aruco_folder = save_root + "/calibration_aruco/"
-if not os.path.exists(aruco_folder):
-   os.makedirs(aruco_folder)
-red_to_aruco(aruco_folder, nCams, outParams)
+# # save for aruco detection
+# aruco_folder = save_root + "/calibration_aruco/"
+# if not os.path.exists(aruco_folder):
+#    os.makedirs(aruco_folder)
+# red_to_aruco(aruco_folder, nCams, outParams)

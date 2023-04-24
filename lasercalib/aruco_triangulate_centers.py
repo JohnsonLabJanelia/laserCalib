@@ -15,7 +15,7 @@ with open(args.root_dir + "/results/calibration.pkl", "rb") as f:
 
 aruco_loc = []
 for i in range(nCams):
-    with open(args.root_dir + "/results/Cam{}_aruco.pkl".format(i), 'rb') as f:
+    with open(args.root_dir + "/results/aruco_corners/Cam{}_aruco.pkl".format(i), 'rb') as f:
         one_camera = pkl.load(f)
         aruco_loc.append(one_camera)
 

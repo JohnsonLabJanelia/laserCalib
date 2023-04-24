@@ -7,7 +7,7 @@ import numpy as np
 
 def sba_print(sba, nCams, title, xlim=[-1500, 1500], ylim=[-1500, 1500], zlim=[-100, 1500], color_palette=None):
     if not color_palette:
-        color_pallette = sns.color_palette("rocket_r", nCams)
+        color_palette = sns.color_palette("rocket_r", nCams)
     
     x = PrettyTable()
     for row in sba.cameraArray:

@@ -43,7 +43,7 @@ for thread in threadpool:
 res_files = []
 for i in range(args.n_cams):
     f = "Cam{}_centroids.pkl".format(i)
-    res_files.append(os.path.join(results_dir, f))
+    res_files.append(results_dir + '/laser_points/' + f)
 
 with open(res_files[0], 'rb') as f:
     pts = pkl.load(f)
