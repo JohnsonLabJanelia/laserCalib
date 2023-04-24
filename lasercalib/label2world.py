@@ -215,6 +215,7 @@ for i, cam in enumerate(new_camList):
 
     t_f = cam["t"]
     t_inv = -np.dot(r_f, t_f)
+    print("Cam {}, t_inv {}".format(i, t_inv))
 
     ex[:3,:3] = cam["R"]  
     ex[:3, 3] = t_inv
@@ -224,26 +225,31 @@ for i, cam in enumerate(new_camList):
 ax.set_xlim([-1500, 1500])
 ax.set_ylim([-1500, 1500])
 ax.set_zlim([-100, 1800])
+ax.scatter(cam_pts_rig_space[0,:], cam_pts_rig_space[1,:], cam_pts_rig_space[2,:], color="r")
 sns.palplot(my_palette)
 plt.show()
 
 
-"""
-This code block works to put the camera parameters in rig space
-"""
-# Loading current best cam params
-with open(root_dir + "/results/sba_blender.pkl", 'rb') as f:
-    sba = pickle.load(f)
+# """
+# This code block works to put the camera parameters in rig space
+# """
+# # Loading current best cam params
+# with open(root_dir + "/results/sba_blender.pkl", 'rb') as f:
+#     sba = pickle.load(f)
 
-sba.points3D = laser_pts_transformed.copy()[:3,:].transpose()
+# sba.points3D = laser_pts_transformed.copy()[:3,:].transpose()
 
-sba.bundle_adjustment_camonly(1e-4)
-sba_print(sba, nCams, "Refit", zlim=[-100, 1800], color_palette=my_palette)
+# sba.bundle_adjustment_camonly(1e-4)
+# sba_print(sba, nCams, "Refit", zlim=[-100, 1800], color_palette=my_palette)
 
-new_camList = []
-for i in range(nCams):
-    new_camList.append(sba_to_readable_format(sba.cameraArray[i,:]))
-    print("Cam {}, R {}, t_vec {}".format(i, new_camList[i]['R'], new_camList[i]['t']))
+# new_camList = []
+# for i in range(nCams):
+#     new_camList.append(sba_to_readable_format(sba.cameraArray[i,:]))
+#     print("Cam {}, R {}, t_vec {}".format(i, new_camList[i]['R'], new_camList[i]['t']))
+
+
+
+
 
 # with open(root_dir + "/results/calibration_rigspace.pkl", 'wb') as f:
 #     pkl.dump(new_camList, f)
