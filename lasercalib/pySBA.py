@@ -157,7 +157,7 @@ class PySBA:
 
 
     # added by RJ
-    def bundle_adjustment_camonly(self, ftol=1e-3):
+    def bundle_adjustment_camonly(self, ftol=1e-4):
         numCameras = self.cameraArray.shape[0]
         numCamParams = 11
         numPoints = self.points3D.shape[0]

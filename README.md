@@ -52,9 +52,8 @@ python aruco_triangulate_centers.py --n_cams=16 --root_dir=/home/user/Calibratio
 ```
 9. Run `label2world.py` fit a rigid body transformation to change the coordinate to desired world coordinate. 
 ```
-python label2world.py --n_cams=16 --root_dir=/home/user/Calibration/16cam --refit=1
+python label2world.py --n_cams=16 --root_dir=/home/user/Calibration/16cam
 ```
-Set refit to 1 if want to refit the model with transformed points. 
 
 Some utility function:
 1. `movie_viewer.py`: visualize laser detection algorithm, `python movie_viewer.py --n_cams=16 --root_dir=/home/user/Calibration/16cam --mode laser`. 

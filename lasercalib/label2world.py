@@ -17,7 +17,6 @@ from sba_print import sba_print
 parser = argparse.ArgumentParser()
 parser.add_argument('--root_dir', type=str, required=True)
 parser.add_argument('--n_cams', type=int, required=True)
-parser.add_argument('--refit', type=int, required=True)
 
 args = parser.parse_args()
 root_dir = args.root_dir
@@ -26,8 +25,8 @@ nCams = args.n_cams
 my_palette = sns.color_palette("pastel", nCams)
 # 4 feature points on a square
 rig_pts = np.array([[-692.0, 692.0, 0.0], [-692.0, -692.0, 0.0], [692, -692, 0.0], [692, 692, 0.0]]).transpose()
-
 #label_pts = np.array([[-780.618, 741.511, 586.724], [-792.757, -748.489, 599.694], [706.665, -773.379, 607.877], [721.711, 725.702, 601.463]]).transpose()
+
 with open(root_dir + "/results/aruco_center_3d.pkl", "rb") as f:
     label_pts = pkl.load(f)   
 label_pts = label_pts.transpose()
@@ -36,11 +35,6 @@ label_pts = label_pts.transpose()
 with open(root_dir + '/results/sba_blender.pkl', 'rb') as f:
     sba = pickle.load(f)
 
-x = PrettyTable()
-for row in sba.cameraArray:
-    x.add_row(row)
-print(x)
-
 # number of labeled points
 nPts = 4 
 padding = np.ones((1,nPts), dtype="float")
@@ -48,17 +42,13 @@ input_pts = np.vstack((label_pts, padding))
 target_pts = np.vstack((rig_pts, padding))
 edge_len = rig_pts[1, 0] - rig_pts[0, 0]
 
-
 A = label_pts.copy()
 B = rig_pts.copy()
 
 (r_label2world, t_label2world) = rigid_transform_3D(A,B)
-
-
 transform_label2world = np.hstack((r_label2world, t_label2world))
 transform_label2world = np.vstack((transform_label2world, [0, 0, 0, 1]))
 print(transform_label2world)
-
 
 ax = []
 fig = plt.figure()
@@ -101,7 +91,6 @@ transformation_matrix = np.dot(scale_eye, transformation_matrix)
 print(transformation_matrix)
 transformed_pts = np.dot(transformation_matrix, input_pts)
 
-
 ax.append(fig.add_subplot(1, 2, 2, projection='3d'))
 ax[1].scatter(transformed_pts[0,:], transformed_pts[1,:], transformed_pts[2,:], c='b', label='transformed_points')
 ax[1].scatter(target_pts[0,:], target_pts[1,:], target_pts[2,:], c='r', label='target_points')
@@ -122,19 +111,10 @@ np.set_printoptions(precision=5, suppress=True)
 for i in range(nPts):
     print ("x, y, z, w: ", transformed_pts[:, i])
 
-
-
 sba_pts = sba.points3D.copy().transpose()
 laser_padding = np.ones((1, sba_pts.shape[1]))
 laser_pts = np.vstack((sba_pts, laser_padding))
 laser_pts_transformed = np.dot(transformation_matrix, laser_pts)
-
-
-
-camList = []
-for i in range(nCams):
-    camList.append(sba_to_readable_format(sba.cameraArray[i,:]))
-
 
 x, y, z = np.array([[-500,0,0],[0,-500,0],[0,0,-500]])
 u, v, w = np.array([[1000,0,0],[0,1000,0],[0,0,1000]])
@@ -143,8 +123,12 @@ ax = []
 fig = plt.figure()
 ax.append(fig.add_subplot(1, 2, 1, projection='3d'))
 cam_pts_label_space = np.zeros(shape=(3, nCams))
-
 cam_ex_rig_space = np.zeros(shape=(4,4,nCams))
+
+
+camList = []
+for i in range(nCams):
+    camList.append(sba_to_readable_format(sba.cameraArray[i,:]))
 
 for i, cam in enumerate(camList):
     ex = np.eye(4)
@@ -155,7 +139,7 @@ for i, cam in enumerate(camList):
     t_f = cam["t"]
     t_inv = -np.dot(r_f, t_f)
 
-  
+    ex[:3,:3] = cam["R"]  
     ex[:3, 3] = t_inv
 
     cam_pts_label_space[:,i] = t_inv
@@ -193,30 +177,14 @@ ax[1].plot(ref_pts_rig_space[0,:], ref_pts_rig_space[1,:], ref_pts_rig_space[2,:
 ax[1].quiver(x,y,z,u,v,w,arrow_length_ratio=0.1, color="black")
 
 
-new_camList = []
 for i in range(nCams):
     ex = np.squeeze(cam_ex_rig_space[:,:,i])
     visualizer = CameraVisualizer(fig, ax[1])
     visualizer.extrinsic2pyramid(ex, my_palette[i], 200)
-
-    # print("cam" + str(i))
-    # print(ex)
-    # this_r = ex[:3,:3].copy()
-    # r_vec = R.from_matrix(this_r.T).as_rotvec()
-    # print("r_vec: ", r_vec)
-    # t_vec = np.dot(-this_r.T, ex[:3, 3])
-    # print("t_vec: ", t_vec)
     this_r = ex[:3,:3].copy()
     r_vec = R.from_matrix(this_r).as_rotvec()
     t_vec = np.dot(this_r, ex[:3, 3])
-    cam_param_rigspace = {}
-    cam_param_rigspace['K'] = camList[i]['K']
-    cam_param_rigspace['R'] = this_r
-    cam_param_rigspace['t'] = t_vec
-    print("Cam {}, R {}, t {}".format(i, this_r, t_vec))
-
-    cam_param_rigspace['d'] = camList[i]['d']
-    new_camList.append(cam_param_rigspace)
+    print("Cam {}, r_vec {}, t_vec {}".format(i, r_vec, t_vec))
 
 ax[1].set_xlim([-2400, 2400])
 ax[1].set_ylim([-2400, 2400])
@@ -224,33 +192,30 @@ ax[1].set_zlim([-2400, 2400])
 ax[1].set_title("rig space")
 plt.show()
 
-if args.refit == 1:
-    # Loading current best cam params
-    with open(root_dir + "/results/sba_blender.pkl", 'rb') as f:
-        sba_rigspace = pickle.load(f)
 
-    """
-    This code block works to put the camera parameters in rig space - but is messy (does bundle adjustment again)
-    """
-    sba.points3D = laser_pts_transformed.copy()[:3,:].transpose()
+"""
+This code block works to put the camera parameters in rig space
+"""
+# Loading current best cam params
+with open(root_dir + "/results/sba_blender.pkl", 'rb') as f:
+    sba_rigspace = pickle.load(f)
 
-    sba.bundle_adjustment_camonly()
-    # sba.bundle_adjustment_camonly_shared()
-    # sba.bundleAdjust(1e-5)
-    sba_print(sba, nCams, "Refit camera params only", color_palette=my_palette)
+sba.points3D = laser_pts_transformed.copy()[:3,:].transpose()
 
-    new_camList = []
-    for i in range(nCams):
-        new_camList.append(sba_to_readable_format(sba.cameraArray[i,:]))
-        print("Cam {}, R {}, t {}".format(i, new_camList[i]['R'], new_camList[i]['t']))
+# sba.bundle_adjustment_camonly()
+sba.bundle_adjustment_camonly_shared()
+# sba.bundleAdjust(1e-5)
+sba_print(sba, nCams, "Refit", zlim=[-100, 1800], color_palette=my_palette)
 
+new_camList = []
+for i in range(nCams):
+    new_camList.append(sba_to_readable_format(sba.cameraArray[i,:]))
 
-# with open(root_dir + "/results/calibration_rigspace.pkl", 'wb') as f:
-#     pkl.dump(new_camList, f)
+with open(root_dir + "/results/calibration_rigspace.pkl", 'wb') as f:
+    pkl.dump(new_camList, f)
 
-# outParams = readable_to_red_format(new_camList)
-# np.savetxt(root_dir + "/results/calibration_rigspace.csv", outParams, delimiter=',', newline=',\n', fmt='%f')
-
+outParams = readable_to_red_format(new_camList)
+np.savetxt(root_dir + "/results/calibration_rigspace.csv", outParams, delimiter=',', newline=',\n', fmt='%f')
 
 
 
