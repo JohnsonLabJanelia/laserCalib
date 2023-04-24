@@ -36,10 +36,7 @@ for cam_idx in range(nCams):
     undistorted_pts.append(ideal_points)
 undistorted_pts = np.asarray(undistorted_pts)
 
-
 pts_3d = []
-
-
 for center_idx in range(4):
     # triangulation 
     # https://filebox.ece.vt.edu/~jbhuang/teaching/ece5554-4554/fa17/lectures/Lecture_15_StructureFromMotion.pdf

@@ -33,24 +33,20 @@ The calibration result is saved in `results/sba_blender.pkl`.
 Note: 
 - It is probably important to initialize these camera parameters in the ballpark of the expected output. These calibration parameters could be estimated from a previous calibration or from a drawing/digital twin of the rig. To innitialize camera postions from blender model, put the `camera_dicts.pkl` in `results`.  
 - You will also need to provide an initial guess of the 3D world coordinates for each laser pointer observation. We simply used the pixel location of the extracted laser pointer centroids from one of our cameras (the central ceiling camera; blue camera in image below).  
-6. Run the `save_cam_params.py` to save out your calibration parameters as a `.csv` file for our labeling tool `red`, and for aruco calibration for transfering the coordinates to a desired world coordiate.
-```
-python save_cam_params.py --n_cams=16 --root_dir=/home/user/Calibration/16cam
-```
-7. Use the `movie_viewer.py` to run aruco based feature detection. 
+6. Use the `movie_viewer.py` to run aruco based feature detection. 
 ```
 python movie_viewer.py --n_cams=16 --root_dir=/home/user/Calibration/16cam --mode aruco
 ```
 Press `p` to pause, press `q` to quit, and the aruco corner will be saved. Make sure all the corners are detected. 
 
-8. Run `aruco_triangulate_*.py` to triangulate corresponding points from aruco marker. `aruco_triangulate_center.py` triangulate the centers of aruco markers, while `aruco_triangulate_corners.py` triangulate all the corners of the aruco markers, and epirically estiamte the scaling factor using ground truth side length of aruco marker (side length in millimeter).  
+7. Run `aruco_triangulate_*.py` to triangulate corresponding points from aruco marker. `aruco_triangulate_center.py` triangulate the centers of aruco markers, while `aruco_triangulate_corners.py` triangulate all the corners of the aruco markers, and epirically estiamte the scaling factor using ground truth side length of aruco marker (side length in millimeter).  
 ```
 python aruco_triangulate_corners.py --n_cams=16 --root_dir=/home/user/Calibration/16cam --side_len=120
 ```
 ```
 python aruco_triangulate_centers.py --n_cams=16 --root_dir=/home/user/Calibration/16cam
 ```
-9. Run `label2world.py` fit a rigid body transformation to change the coordinate to desired world coordinate. 
+8. Run `label2world.py` fit a rigid body transformation to change the coordinate to desired world coordinate. 
 ```
 python label2world.py --n_cams=16 --root_dir=/home/user/Calibration/16cam
 ```

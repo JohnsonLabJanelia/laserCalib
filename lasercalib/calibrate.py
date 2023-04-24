@@ -9,6 +9,7 @@ from convert_params import load_from_blender
 from convert_params import *
 import argparse
 from sba_print import sba_print
+import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--root_dir', type=str, required=True)
@@ -111,3 +112,19 @@ with open(output_file, 'wb') as f:
     pkl.dump(sba, f)
 
 print("Done fitting, saved to: {}".format(root_dir + "/results"))
+
+# saving 
+camList = []
+for i in range(args.n_cams):
+    camList.append(sba_to_readable_format(sba.cameraArray[i,:]))
+
+# save for red
+outParams = readable_to_red_format(camList)
+np.savetxt(args.root_dir + '/results/calibration_red.csv', outParams, delimiter=',', newline=',\n', fmt='%f')
+
+# save for aruco detection
+save_root = args.root_dir + "/results/calibration_aruco/"
+if not os.path.exists(save_root):
+   os.makedirs(save_root)
+
+red_to_aruco(save_root, args.n_cams, outParams)

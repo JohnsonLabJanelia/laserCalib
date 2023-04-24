@@ -29,9 +29,9 @@ class VideoGet:
         self.aruco = aruco
         self.cam_idx = cam_idx
         if self.aruco:
-            cam_params_file = src_dir + "/results/calibration_aruco/Cam{}.yaml".format(i)
-            print(cam_params_file)
-            self.cam_matrix, self.distortion = self.load_camera_intrinsic(cam_params_file)
+            # cam_params_file = src_dir + "/results/calibration_aruco/Cam{}.yaml".format(i)
+            # print(cam_params_file)
+            # self.cam_matrix, self.distortion = self.load_camera_intrinsic(cam_params_file)
             # keep a moving average
             self.corner_average = {
                 0: np.zeros((4, 2)),

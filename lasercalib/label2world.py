@@ -13,6 +13,7 @@ from datetime import date
 from rigid_body import rigid_transform_3D
 import argparse
 from sba_print import sba_print
+import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--root_dir', type=str, required=True)
@@ -248,15 +249,15 @@ plt.show()
 #     print("Cam {}, R {}, t_vec {}".format(i, new_camList[i]['R'], new_camList[i]['t']))
 
 
+save_root = root_dir + "/rigspace/results/"
+with open(save_root + "calibration_rigspace.pkl", 'wb') as f:
+    pkl.dump(new_camList, f)
 
+outParams = readable_to_red_format(new_camList)
+np.savetxt(save_root + "calibration_rigspace.csv", outParams, delimiter=',', newline=',\n', fmt='%f')
 
-
-# with open(root_dir + "/results/calibration_rigspace.pkl", 'wb') as f:
-#     pkl.dump(new_camList, f)
-
-# outParams = readable_to_red_format(new_camList)
-# np.savetxt(root_dir + "/results/calibration_rigspace.csv", outParams, delimiter=',', newline=',\n', fmt='%f')
-
-
-
-
+# save for aruco detection
+aruco_folder = save_root + "/calibration_aruco/"
+if not os.path.exists(aruco_folder):
+   os.makedirs(save_root)
+red_to_aruco(aruco_folder, nCams, outParams)
