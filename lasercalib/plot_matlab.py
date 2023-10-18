@@ -17,7 +17,7 @@ nCams = args.n_cams
 camList = []
 for i in range(nCams):
     cam_params = {}
-    filename = args.root_dir + "/calibration_aruco/Cam{}.yaml".format(i)
+    filename = args.root_dir + "/Cam{}.yaml".format(i)
     print(filename)
     fs = cv2.FileStorage(filename, cv2.FILE_STORAGE_READ)
     cam_params['camera_matrix'] = fs.getNode("camera_matrix").mat()
