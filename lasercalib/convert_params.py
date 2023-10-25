@@ -18,7 +18,7 @@ def readable_to_red_format(camList):
 def sba_to_readable_format(camParamVec):
     thisK = np.full((3, 3), 0.0)
     thisK[0, 0] = camParamVec[6]
-    thisK[1,1] = camParamVec[6]
+    thisK[1,1] = camParamVec[6] 
     thisK[2,2] = 1
     thisK[2,:2] = camParamVec[9:]
     r = R.from_rotvec(-camParamVec[:3]).as_matrix()
@@ -58,6 +58,29 @@ def load_from_blender(filename, nCams):
         cameraArray[i][3:6] = calib_P
         cameraArray[i][6:9] = [1500, 0, 0]
         cameraArray[i][9:11] = [1604, 1100]
+    return cameraArray
+
+def initialize_from_checkerboard(filedir, nCams):
+    # load files 
+
+    calib_data_all = []
+    for idx in range(nCams):
+        fs = cv2.FileStorage(filedir + "/Cam{}.yaml".format(idx), cv2.FILE_STORAGE_READ)
+        one_calib = {
+            "camera_matrix": fs.getNode("camera_matrix").mat(),
+            "distortion_coefficients": fs.getNode("distortion_coefficients").mat(),
+            "R": fs.getNode("rc_ext").mat(),
+            "T": fs.getNode("tc_ext").mat()
+        }
+        calib_data_all.append(one_calib)
+
+    cameraArray = np.zeros(shape=(nCams, 11))
+    for i in range(nCams):
+        calib_R = R.from_matrix(calib_data_all[i]['R']).as_rotvec()
+        cameraArray[i][0:3] = calib_R
+        cameraArray[i][3:6] = calib_data_all[i]['T'][:, 0]
+        cameraArray[i][6:9] = [calib_data_all[i]["camera_matrix"][0, 0], calib_data_all[i]["distortion_coefficients"][0, 0], calib_data_all[i]["distortion_coefficients"][1, 0]]
+        cameraArray[i][9:11] = [calib_data_all[i]["camera_matrix"][0, 2], calib_data_all[i]["camera_matrix"][1, 2]]
     return cameraArray
 
 def red_to_aruco(save_root, nCams, cam):

@@ -10,10 +10,13 @@ from convert_params import *
 import argparse
 from sba_print import sba_print
 import os
+from camera_visualizer import CameraVisualizer
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--root_dir', type=str, required=True)
 parser.add_argument('--cam_id_for_3d_init', type=int, required=True)
+parser.add_argument('--min_num_cam_per_point', type=int, default=4)
 parser.add_argument('--shift_3d', type=float, default=1.0)
 
 args = parser.parse_args()
@@ -22,6 +25,7 @@ args = parser.parse_args()
 root_dir = args.root_dir
 cam_idx_3dpts = args.cam_id_for_3d_init
 shift_3d = args.shift_3d
+min_num_cam_per_point = args.min_num_cam_per_point
  
 with open(root_dir + "/results/centroids.pkl", 'rb') as file:
     pts = pkl.load(file)
@@ -33,12 +37,40 @@ nCams = pts.shape[2]
 my_palette = sns.color_palette("rocket_r", nCams)
 
 ## blender initialization
-cameraArray = load_from_blender(root_dir + "/results/camera_dicts.pkl", nCams)
+# cameraArray = load_from_blender(root_dir + "/results/camera_dicts.pkl", nCams)
+cameraArray = initialize_from_checkerboard(root_dir + "/checkerboard_calib/", nCams)
+camList = []
+for i in range(nCams):
+    camList.append(sba_to_readable_format(cameraArray[i,:]))
 
+fig =  plt.figure()
+ax = fig.add_subplot(1, 1, 1, projection='3d')
+
+for i, cam in enumerate(camList):
+    ex = np.eye(4)
+    
+    r_f = cam["R"]
+    r_inv = r_f.T
+
+    t_f = cam["t"]
+    t_inv = -np.dot(r_f, t_f)
+
+    ex[:3,:3] = cam["R"]  
+    ex[:3, 3] = t_inv
+
+    visualizer = CameraVisualizer(fig, ax)
+    visualizer.extrinsic2pyramid(ex, my_palette[i], 200)
+
+ax.set_xlim([-1500, 1500])
+ax.set_ylim([-1500, 1500])
+ax.set_zlim([-100, 1800])
+ax.set_title("rig space")
+
+## use 3d triangulated points to initialize
 keep = np.zeros(shape=(nPts,), dtype=bool)
 for i in range(nPts):
     v = pts[i, 0, :]
-    if ((np.sum(~np.isnan(v)) >= nCams) and (~np.isnan(v[0]))):
+    if ((np.sum(~np.isnan(v)) >= min_num_cam_per_point) and (~np.isnan(v[cam_idx_3dpts]))):
         keep[i] = True
 
 inPts = pts[keep, :, :]

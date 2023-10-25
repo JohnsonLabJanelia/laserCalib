@@ -20,7 +20,7 @@ We are using Linux. You will need to install `ffmpeg` on your machine such that 
 ## Basic Workflow  
 1. Collect videos  
 - Use syncrhonized cameras. Turn off all the lights in the rig. This code is currently written for calibrating color cameras. If you are using monochrome cameras, please adjust the centroid-finding code to accept single channel images. If using color cameras, please use a green laser pointer. If you'd rather use a blue or red laser pointer, please adjust the centroid-finding code to use the red or blue image channel (right now it is using the green channel to find the green laser pointer centroid in each image). Use short (~100-500 microsecond) camera exposures and low gain such that the only bright spot in the image is from the laser pointer. The goal is to collect several thousand images on each camera of the laser pointer spot. You can shine the spot onto the floor of the arena (see example below).  
-2. Place all the laser videos in a folder called `laser_movies`, under the parent root folder. 
+2. Place all the laser videos in a folder called `movies`, under the parent root folder. 
 3. Run the `find_laser_points.py` script to extract centroids from these images and save them to a `/results/*.pkl` file. For instance: 
 ```
 python find_laser_points.py --n_cams=8 --root_dir=/home/user/Calibration/16cam --frame_range 0 5000 --width 3208 --height 2200

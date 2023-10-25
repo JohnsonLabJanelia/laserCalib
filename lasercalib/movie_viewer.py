@@ -16,7 +16,12 @@ class VideoGet:
     def __init__(self, src_dir, q, cam_idx, laser=False, aruco=False):
         
         self.src_dir = src_dir
-        video_source = src_dir + "/aruco/Cam{}.mp4".format(cam_idx)
+
+        if aruco:
+            video_source = src_dir + "/aruco/Cam{}.mp4".format(cam_idx)
+            
+        else:
+            video_source = src_dir + "/movies/Cam{}.mp4".format(cam_idx)
         print(video_source)
         self.stream = cv2.VideoCapture(video_source)
         if (self.stream.isOpened()== False): 

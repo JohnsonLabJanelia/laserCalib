@@ -18,7 +18,7 @@ class CentroidFinder(threading.Thread):
     def process_queue(self):
         small_footprint = morphology.disk(1)
         big_footprint = morphology.disk(4)
-        laser_intensity_thresh = 70
+        laser_intensity_thresh = 50
         centroid_dist_thresh = 1100
         
         while True:
