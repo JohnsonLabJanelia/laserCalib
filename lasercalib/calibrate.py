@@ -34,6 +34,7 @@ with open(root_dir + "/results/centroids.pkl", 'rb') as file:
 pts = np.flip(pts, axis=1)
 nPts = pts.shape[0]
 nCams = pts.shape[2]
+import pdb; pdb.set_trace()
 my_palette = sns.color_palette("rocket_r", nCams)
 
 ## blender initialization
