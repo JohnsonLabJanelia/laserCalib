@@ -60,12 +60,11 @@ def load_from_blender(filename, nCams):
         cameraArray[i][9:11] = [1604, 1100]
     return cameraArray
 
-def initialize_from_checkerboard(filedir, nCams):
+def initialize_from_checkerboard(filedir, nCams, cam_names):
     # load files 
-
     calib_data_all = []
     for idx in range(nCams):
-        fs = cv2.FileStorage(filedir + "/Cam{}.yaml".format(idx), cv2.FILE_STORAGE_READ)
+        fs = cv2.FileStorage(filedir + "/{}.yaml".format(cam_names[idx]), cv2.FILE_STORAGE_READ)
         one_calib = {
             "camera_matrix": fs.getNode("camera_matrix").mat(),
             "distortion_coefficients": fs.getNode("distortion_coefficients").mat(),

@@ -28,18 +28,20 @@ shift_3d = args.shift_3d
 min_num_cam_per_point = args.min_num_cam_per_point
  
 with open(root_dir + "/results/centroids.pkl", 'rb') as file:
-    pts = pkl.load(file)
+    centroids_dict = pkl.load(file)
+
+pts = centroids_dict['centroids']
+cam_names = centroids_dict['cam_names']
 
 # flip xy (regionprops orders)
 pts = np.flip(pts, axis=1)
 nPts = pts.shape[0]
 nCams = pts.shape[2]
-import pdb; pdb.set_trace()
 my_palette = sns.color_palette("rocket_r", nCams)
 
 ## blender initialization
 # cameraArray = load_from_blender(root_dir + "/results/camera_dicts.pkl", nCams)
-cameraArray = initialize_from_checkerboard(root_dir + "/checkerboard_calib/", nCams)
+cameraArray = initialize_from_checkerboard(root_dir + "/calib_init/", nCams, cam_names)
 camList = []
 for i in range(nCams):
     camList.append(sba_to_readable_format(cameraArray[i,:]))

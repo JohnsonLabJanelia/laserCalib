@@ -8,20 +8,22 @@ from feature_detection import green_laser_finder
 import pickle as pkl
 import argparse
 import os
+import glob
+
 
 def concat_vh(list_2d):
     return cv2.vconcat([cv2.hconcat(list_h) for list_h in list_2d])
 
 class VideoGet:
-    def __init__(self, src_dir, q, cam_idx, laser=False, aruco=False):
+    def __init__(self, src_dir, q, cam_name, laser=False, aruco=False):
         
         self.src_dir = src_dir
 
         if aruco:
-            video_source = src_dir + "/aruco/Cam{}.mp4".format(cam_idx)
+            video_source = src_dir + "/aruco/{}.mp4".format(cam_name)
             
         else:
-            video_source = src_dir + "/movies/Cam{}.mp4".format(cam_idx)
+            video_source = src_dir + "/movies/{}.mp4".format(cam_name)
         print(video_source)
         self.stream = cv2.VideoCapture(video_source)
         if (self.stream.isOpened()== False): 
@@ -33,18 +35,13 @@ class VideoGet:
         self.current_frame = 0
         self.laser = laser
         self.aruco = aruco
-        self.cam_idx = cam_idx
+        self.cam_name = cam_name
         if self.aruco:
             # cam_params_file = src_dir + "/results/calibration_aruco/Cam{}.yaml".format(i)
             # print(cam_params_file)
             # self.cam_matrix, self.distortion = self.load_camera_intrinsic(cam_params_file)
             # keep a moving average
-            self.corner_average = {
-                0: np.zeros((4, 2)),
-                1: np.zeros((4, 2)),
-                2: np.zeros((4, 2)),
-                3: np.zeros((4, 2))
-            }
+            self.corner_average = {}
 
     def load_camera_intrinsic(self, cam_params_file):
         fs = cv2.FileStorage(cam_params_file, cv2.FILE_STORAGE_READ)
@@ -74,10 +71,11 @@ class VideoGet:
 
                 if self.aruco:
                     frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                    aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_100)
-                    aruco_params = cv2.aruco.DetectorParameters_create() 
+                    aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100)
+                    aruco_params = cv2.aruco.DetectorParameters()
+                    aruco_detector = cv2.aruco.ArucoDetector(aruco_dict, aruco_params)
                     aruco_params.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
-                    corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(frame_gray, aruco_dict, parameters=aruco_params)
+                    corners, ids, rejectedImgPoints = aruco_detector.detectMarkers(frame_gray)
 
                     if len(corners) > 0:
                         # flatten the ArUco IDs list
@@ -86,11 +84,10 @@ class VideoGet:
                         for (markerCorner, markerID) in zip(corners, ids):
                             # rvec, tvec, markerPoints = cv2.aruco.estimatePoseSingleMarkers(markerCorner, 100, self.cam_matrix, self.distortion)
                             # cv2.drawFrameAxes(frame, self.cam_matrix, self.distortion, rot, trans, 100)  # Draw Axis
-                            if markerID in [0, 1, 2, 3]:
-                                if np.sum(self.corner_average[markerID]) == 0:
-                                    self.corner_average[markerID] = markerCorner.reshape((4, 2))
-                                else:
-                                    self.corner_average[markerID] = (markerCorner.reshape((4, 2)) + self.corner_average[markerID])/2
+                            if markerID in self.corner_average.keys():
+                                self.corner_average[markerID] = (markerCorner.reshape((4, 2)) + self.corner_average[markerID])/2
+                            else:
+                                self.corner_average[markerID] = markerCorner.reshape((4, 2))
 
                     for markerID, markerCorner in self.corner_average.items():        
                         (topLeft, topRight, bottomRight, bottomLeft) = markerCorner
@@ -131,7 +128,7 @@ class VideoGet:
             aruco_marker_folder = self.src_dir + "/results/aruco_corners/" 
             if not os.path.exists(aruco_marker_folder):
                 os.makedirs(aruco_marker_folder)
-            with open(aruco_marker_folder + "Cam{}_aruco.pkl".format(self.cam_idx), 'wb') as f:
+            with open(aruco_marker_folder + "{}_aruco.pkl".format(self.cam_name), 'wb') as f:
                 pkl.dump(self.corner_average, f)
             print("Aruco corner detection saved.")
         self.stopped = True
@@ -143,6 +140,12 @@ parser.add_argument('--n_cams', type=int, required=True)
 parser.add_argument('--mode', choices=['laser', 'aruco'], required=True)
 args = parser.parse_args()
 
+cam_names = []
+for file in glob.glob(args.root_dir + "/movies/*.mp4"):
+    file_name = file.split("/")
+    cam_names.append(file_name[-1][:-4])
+cam_names.sort()
+
 num_cams = args.n_cams
 view_queues = []
 
@@ -152,9 +155,9 @@ for i in range(num_cams):
 threadpool = []
 for i in range(num_cams):
     if args.mode == "aruco":
-        threadpool.append(VideoGet(args.root_dir, view_queues[i], i, laser=False, aruco=True))
+        threadpool.append(VideoGet(args.root_dir, view_queues[i], cam_names[i], laser=False, aruco=True))
     else:
-        threadpool.append(VideoGet(args.root_dir, view_queues[i], i, laser=True, aruco=False))
+        threadpool.append(VideoGet(args.root_dir, view_queues[i], cam_names[i], laser=True, aruco=False))
 
 for thread in threadpool:
     thread.start()
@@ -172,7 +175,7 @@ while True:
 
     for i in range(num_cams):
         frame_id, img = view_queues[i].get()
-        cv2.putText(img, "Cam {}: {:.0f}".format(i, frame_id),
+        cv2.putText(img, "{}: {:.0f}".format(cam_names[i], frame_id),
             (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255))
         imgs[i] = img
 
@@ -188,7 +191,9 @@ while True:
             layout.append(temp.copy())
         i = i + 1
     img_tile = concat_vh(layout)
-    cv2.imshow('Frame', img_tile)
+
+    img_tile_resize = cv2.resize(img_tile, (2100, 1200))
+    cv2.imshow('Frame', img_tile_resize)
 
 
 for i, thread in enumerate(threadpool):
