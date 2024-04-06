@@ -39,13 +39,11 @@ python movie_viewer.py --n_cams=16 --root_dir=/home/user/Calibration/16cam --mod
 ```
 Press `p` to pause, press `q` to quit, and the aruco corner will be saved. Make sure all the corners are detected. 
 
-7. Run `aruco_triangulate_*.py` to triangulate corresponding points from aruco marker. `aruco_triangulate_center.py` triangulate the centers of aruco markers, while `aruco_triangulate_corners.py` triangulate all the corners of the aruco markers, and epirically estiamte the scaling factor using ground truth side length of aruco marker (side length in millimeter).  
+7. Run `aruco_triangulate.py` to triangulate corresponding points from aruco marker. It triangulates the centers of aruco markers  and all the corners of the aruco markers. Also, it epirically estiamtes the scaling factor using ground truth side length of aruco marker (side length in millimeter).  
 ```
-python aruco_triangulate_corners.py --n_cams=16 --root_dir=/home/user/Calibration/16cam --side_len=120
+python aruco_triangulate.py --n_cams=16 --root_dir=/home/user/Calibration/16cam --side_len=120
 ```
-```
-python aruco_triangulate_centers.py --n_cams=16 --root_dir=/home/user/Calibration/16cam
-```
+
 8. Run `label2world.py` fit a rigid body transformation to change the coordinate to desired world coordinate. 
 ```
 python label2world.py --n_cams=16 --root_dir=/home/user/Calibration/16cam
