@@ -162,4 +162,4 @@ save_root = args.root_dir + "/results/calibration_aruco/"
 if not os.path.exists(save_root):
    os.makedirs(save_root)
 
-red_to_aruco(save_root, nCams, outParams)
+readable_format_to_aruco_format(save_root, nCams, camList, cam_names)

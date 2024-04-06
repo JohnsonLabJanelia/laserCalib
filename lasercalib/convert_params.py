@@ -82,7 +82,8 @@ def initialize_from_checkerboard(filedir, nCams, cam_names):
         cameraArray[i][9:11] = [calib_data_all[i]["camera_matrix"][0, 2], calib_data_all[i]["camera_matrix"][1, 2]]
     return cameraArray
 
-def red_to_aruco(save_root, nCams, cam):
+def red_to_aruco(save_root, nCams, cam, cam_names):
+    ## Depreciate 
     for cam_idx in range(nCams):
         intrinsicMatrix = np.asarray(cam[cam_idx][0:9]).reshape(3, 3)
         intrinsicMatrix = intrinsicMatrix
@@ -91,11 +92,22 @@ def red_to_aruco(save_root, nCams, cam):
         distortionCoefficients = np.asarray(distortionCoefficients).reshape(4, 1)
 
         # save it using opencv 
-        output_filename = save_root + 'Cam{}.yaml'.format(cam_idx)
+        output_filename = save_root + '{}.yaml'.format(cam_names[cam_idx])
         s = cv2.FileStorage(output_filename, cv2.FileStorage_WRITE)
         s.write('image_width', 3208)
         s.write('image_height', 2200)
 
         s.write('camera_matrix', intrinsicMatrix)
         s.write('distortion_coefficients', distortionCoefficients)
+        s.release()
+
+
+def readable_format_to_aruco_format(save_root, nCams, camList, cam_names):
+    for i in range(nCams):
+        output_filename = save_root + '{}.yaml'.format(cam_names[i])
+        s = cv2.FileStorage(output_filename, cv2.FileStorage_WRITE)
+        s.write('camera_matrix', camList[i]['K'].T)
+        s.write('distortion_coefficients', np.asarray([camList[i]['d'][0], camList[i]['d'][1], 0, 0, 0]))
+        s.write('rc_ext', camList[i]['R'].T)
+        s.write('tc_ext', camList[i]['t'])
         s.release()

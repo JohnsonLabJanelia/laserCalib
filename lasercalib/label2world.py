@@ -23,14 +23,56 @@ args = parser.parse_args()
 root_dir = args.root_dir
 nCams = args.n_cams
 
-my_palette = sns.color_palette("rocket_r", nCams)
+
 # 4 feature points on a square
-rig_pts = np.array([[-692.0, 692.0, 0.0], [-692.0, -692.0, 0.0], [692, -692, 0.0], [692, 692, 0.0]]).transpose()
+# rig_pts = np.array([[-692.0, 692.0, 0.0], [-692.0, -692.0, 0.0], [692, -692, 0.0], [692, 692, 0.0]]).transpose()
+rig_pts = np.array([[-692.0, -692.0, 0.0], [692.0, -692.0, 0.0], [692, 692, 0.0], [-692, 692, 0.0]]).transpose()
 #label_pts = np.array([[-780.618, 741.511, 586.724], [-792.757, -748.489, 599.694], [706.665, -773.379, 607.877], [721.711, 725.702, 601.463]]).transpose()
 
 with open(root_dir + "/results/aruco_center_3d.pkl", "rb") as f:
-    label_pts = pkl.load(f)   
+    label_dict = pkl.load(f)
+
+with open(args.root_dir + "/results/centroids.pkl", 'rb') as file:
+    centroids_dict = pkl.load(file)
+cam_names = centroids_dict['cam_names']
+
+serial_to_order = {
+    "2002496": 0,
+    "2002483": 1,
+    "2002488": 2,
+    "2002480": 3,
+    "2002489": 4,
+    "2002485": 5,
+    "2002490": 6,
+    "2002492": 7,
+    "2002479": 8,
+    "2002494": 9,
+    "2002495": 10,
+    "2002482": 11,
+    "2002481": 12,
+    "2002491": 13,
+    "2002493": 14,
+    "2002484": 15,
+    "710038" : 16
+}
+
+unordered_color_palette = sns.color_palette("rocket_r", nCams)
+my_palette = []
+for one_name in cam_names:
+    cam_serial = one_name[3:]
+    cam_order = serial_to_order[cam_serial]
+    color_of_cam = unordered_color_palette[cam_order]
+    my_palette.append(color_of_cam)
+
+maker_ids = [0, 1, 2, 3]
+label_pts = []
+for mk_idx in maker_ids:
+    label_pts.append(label_dict[mk_idx])
+label_pts = np.asarray(label_pts)
 label_pts = label_pts.transpose()
+
+print(rig_pts)
+print(label_pts)
 ##
 
 with open(root_dir + '/results/sba.pkl', 'rb') as f:
@@ -41,7 +83,6 @@ nPts = 4
 padding = np.ones((1,nPts), dtype="float")
 input_pts = np.vstack((label_pts, padding))
 target_pts = np.vstack((rig_pts, padding))
-edge_len = rig_pts[1, 0] - rig_pts[0, 0]
 
 A = label_pts.copy()
 B = rig_pts.copy()
@@ -79,9 +120,8 @@ print(transformation_matrix)
 print("transformed points")
 print(transformed_pts)
 
-## TODO: fit scaling matrix together
-mag = np.abs(transformed_pts[1, 0] - transformed_pts[0, 0])
-scale_mag = np.abs(edge_len / mag)
+
+scale_mag = 1
 print("scale_mag: ", scale_mag)
 scale_eye = np.eye(4) * scale_mag
 scale_eye[3,3] = 1
@@ -185,9 +225,7 @@ for i in range(nCams):
     this_r = ex[:3,:3].copy()
     r_vec = R.from_matrix(this_r).as_rotvec()
     normalized_R = R.from_rotvec(r_vec).as_matrix()
-    t_vec = -np.dot(normalized_R.T, ex[:3, 3])
-    print("Cam {}, R {}, t_vec {}".format(i, R.from_rotvec(r_vec).as_matrix(), t_vec))
-    
+    t_vec = -np.dot(normalized_R.T, ex[:3, 3])    
     new_cam_params = {}
     new_cam_params['K'] = camList[i]['K']
     new_cam_params['d'] = camList[i]['d']
@@ -216,8 +254,6 @@ for i, cam in enumerate(new_camList):
 
     t_f = cam["t"]
     t_inv = -np.dot(r_f, t_f)
-    print("Cam {}, t_inv {}".format(i, t_inv))
-
     ex[:3,:3] = cam["R"]  
     ex[:3, 3] = t_inv
 
@@ -227,7 +263,7 @@ ax.set_xlim([-1500, 1500])
 ax.set_ylim([-1500, 1500])
 ax.set_zlim([-100, 1800])
 ax.scatter(cam_pts_rig_space[0,:], cam_pts_rig_space[1,:], cam_pts_rig_space[2,:], color="r")
-sns.palplot(my_palette)
+# sns.palplot(my_palette)
 plt.show()
 
 
@@ -246,21 +282,21 @@ sba_print(sba, nCams, "Refit", zlim=[-100, 1800], color_palette=my_palette)
 new_camList = []
 for i in range(nCams):
     new_camList.append(sba_to_readable_format(sba.cameraArray[i,:]))
-    print("Cam {}, R {}, t_vec {}".format(i, new_camList[i]['R'], new_camList[i]['t']))
+    print("{}, R {}, t_vec {}".format(cam_names[i], new_camList[i]['R'], new_camList[i]['t']))
 
 
-# save_root = root_dir + "/rigspace/results/"
-# if not os.path.exists(save_root):
-#    os.makedirs(save_root)
+save_root = root_dir + "/results/rigspace/"
+if not os.path.exists(save_root):
+   os.makedirs(save_root)
 
-# with open(save_root + "calibration.pkl", 'wb') as f:
-#     pkl.dump(new_camList, f)
+with open(save_root + "calibration.pkl", 'wb') as f:
+    pkl.dump(new_camList, f)
 
-# outParams = readable_to_red_format(new_camList)
-# np.savetxt(save_root + "calibration_red.csv", outParams, delimiter=',', newline=',\n', fmt='%f')
+outParams = readable_to_red_format(new_camList)
+np.savetxt(save_root + "calibration_red.csv", outParams, delimiter=',', newline=',\n', fmt='%f')
 
-# # save for aruco detection
-# aruco_folder = save_root + "/calibration_aruco/"
-# if not os.path.exists(aruco_folder):
-#    os.makedirs(aruco_folder)
-# red_to_aruco(aruco_folder, nCams, outParams)
+# save for aruco detection
+aruco_folder = save_root + "/calibration_rig/"
+if not os.path.exists(aruco_folder):
+   os.makedirs(aruco_folder)
+readable_format_to_aruco_format(aruco_folder, nCams, new_camList, cam_names)
