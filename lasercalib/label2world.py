@@ -36,33 +36,7 @@ with open(args.root_dir + "/results/centroids.pkl", 'rb') as file:
     centroids_dict = pkl.load(file)
 cam_names = centroids_dict['cam_names']
 
-serial_to_order = {
-    "2002496": 0,
-    "2002483": 1,
-    "2002488": 2,
-    "2002480": 3,
-    "2002489": 4,
-    "2002485": 5,
-    "2002490": 6,
-    "2002492": 7,
-    "2002479": 8,
-    "2002494": 9,
-    "2002495": 10,
-    "2002482": 11,
-    "2002481": 12,
-    "2002491": 13,
-    "2002493": 14,
-    "2002484": 15,
-    "710038" : 16
-}
-
-unordered_color_palette = sns.color_palette("rocket_r", nCams)
-my_palette = []
-for one_name in cam_names:
-    cam_serial = one_name[3:]
-    cam_order = serial_to_order[cam_serial]
-    color_of_cam = unordered_color_palette[cam_order]
-    my_palette.append(color_of_cam)
+my_palette = sns.color_palette("rocket_r", nCams)
 
 maker_ids = [0, 1, 2, 3]
 label_pts = []

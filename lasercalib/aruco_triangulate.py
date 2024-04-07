@@ -8,7 +8,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--root_dir', type=str, required=True)
 parser.add_argument('--n_cams', type=int, required=True)
 parser.add_argument('--side_len', type=float, required=120.0)
-parser.add_argument('--load_matlab', type=bool, default=False)
+parser.add_argument('--load_matlab', type=int, default=0)
 
 args = parser.parse_args()
 nCams = args.n_cams
@@ -17,7 +17,7 @@ with open(args.root_dir + "/results/centroids.pkl", 'rb') as file:
     centroids_dict = pkl.load(file)
 cam_names = centroids_dict['cam_names']
 
-if args.load_matlab:
+if args.load_matlab==1:
     camList = []
     for i in range(nCams):
         cam_params = {}

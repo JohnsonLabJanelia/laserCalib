@@ -9,6 +9,7 @@ import glob
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--yaml_dir', type=str, required=True)
+parser.add_argument('--ordered', type=int, required=True)
 
 args = parser.parse_args()
 
@@ -19,6 +20,13 @@ for file in glob.glob(args.yaml_dir + "/*.yaml"):
 cam_names.sort()
 
 nCams = len(cam_names)
+
+if args.ordered == 1:
+    print("Here")
+    cam_names = []
+    for i in range(nCams):
+        cam_names.append("Cam{}".format(i))
+
 
 serial_to_order = {
     "2002496": 0,
@@ -54,13 +62,19 @@ for i in range(nCams):
 
 
 unordered_color_palette = sns.color_palette("rocket_r", nCams)
-my_palette = []
-for one_name in cam_names:
-    cam_serial = one_name[3:]
-    cam_order = serial_to_order[cam_serial]
-    color_of_cam = unordered_color_palette[cam_order]
-    my_palette.append(color_of_cam)
-    
+
+if args.ordered:
+    my_palette = unordered_color_palette
+
+else:
+    my_palette = []
+    for one_name in cam_names:
+        cam_serial = one_name[3:]
+        cam_order = serial_to_order[cam_serial]
+        color_of_cam = unordered_color_palette[cam_order]
+        my_palette.append(color_of_cam)
+
+
 xlim=[-1500, 1500]
 ylim=[-1500, 1500]
 zlim=[-100, 2000]
