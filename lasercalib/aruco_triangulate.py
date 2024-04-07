@@ -146,9 +146,11 @@ for pt in delta_pts:
     pts.append(np.linalg.norm(pt))
     print("side length (mm) :", np.linalg.norm(pt))
 
-print("Ratio of real to estimated side length of aruco marker: ", args.side_len/np.mean(pts))
+scale_factor = args.side_len/np.mean(pts)
+print("Ratio of real to estimated side length of aruco marker: ", scale_factor)
 with open(args.root_dir + "/results/aruco_corners_3d.pkl", 'wb') as f:
     pkl.dump(features_3d, f)
 
+features_center_3d['scale_factor'] = scale_factor
 with open(args.root_dir + "/results/aruco_center_3d.pkl", 'wb') as f:
     pkl.dump(features_center_3d, f)

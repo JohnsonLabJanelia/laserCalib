@@ -18,6 +18,7 @@ import os
 parser = argparse.ArgumentParser()
 parser.add_argument('--root_dir', type=str, required=True)
 parser.add_argument('--n_cams', type=int, required=True)
+parser.add_argument('--use_scale', type=int, required=True)
 
 args = parser.parse_args()
 root_dir = args.root_dir
@@ -48,7 +49,6 @@ label_pts = label_pts.transpose()
 print(rig_pts)
 print(label_pts)
 ##
-
 with open(root_dir + '/results/sba.pkl', 'rb') as f:
     sba = pickle.load(f)
 
@@ -94,8 +94,12 @@ print(transformation_matrix)
 print("transformed points")
 print(transformed_pts)
 
+## TODO: fit scaling matrix together
+if args.use_scale == 1:
+    scale_mag = label_dict['scale_factor']
+else:
+    scale_mag = 1
 
-scale_mag = 1
 print("scale_mag: ", scale_mag)
 scale_eye = np.eye(4) * scale_mag
 scale_eye[3,3] = 1
@@ -250,7 +254,9 @@ with open(root_dir + "/results/sba.pkl", 'rb') as f:
 
 sba.points3D = laser_pts_transformed.copy()[:3,:].transpose()
 
-sba.bundle_adjustment_camonly(1e-4)
+
+sba.bundleAdjust(1e-4)
+# sba.bundle_adjustment_camonly(1e-4)
 sba_print(sba, nCams, "Refit", zlim=[-100, 1800], color_palette=my_palette)
 
 new_camList = []
