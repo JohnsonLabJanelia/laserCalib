@@ -23,11 +23,15 @@ We are using Linux. You will need to install `ffmpeg` on your machine such that 
 2. Place all the laser videos in a folder called `movies`, under the parent root folder. 
 3. Run the `find_laser_points.py` script to extract centroids from these images and save them to a `/results/*.pkl` file. For instance: 
 ```
-python find_laser_points.py --n_cams=8 --root_dir=/home/user/Calibration/16cam --frame_range 0 5000 --width 3208 --height 2200
+python find_laser_points.py --root_dir=/home/user/Calibration/16cam --frame_range 0 5000 --width 3208 --height 2200
+```
+4. Run `prepare_points3d.py` to prepare datasets for calibration. It will use one camera initial parameters, and ground truth z plane value to infer points 3d locations. Please select a camera that doesn't move much. 
+```
+python prepare_points3d.py -f /media/user/data0/laser_calibrate_2024_4_1/2024_04_01_17_24_00/ /media/user/data0/laser_calibrate_2024_4_1/2024_04_01_17_09_58/ -z 105 0 -o /media/user/data0/laser_calibrate_2024_4_1/2024_04_01_17_09_58/ -n Cam710038
 ```
 5. Run `calibrate.py` to calibrate the cameras (edit to adjust for cam number, cam param initialization, and 3D point initialization.  
 ```
-python calibrate.py --root_dir=/home/user/Calibration/16cam --cam_name_for_3d_init Cam710038
+python calibrate.py --root_dir=/home/user/Calibration/16cam
 ```
 The calibration result is saved in `results/sba.pkl`.
 Note: 
@@ -50,7 +54,11 @@ python label2world.py --n_cams=16 --root_dir=/home/user/Calibration/16cam --use_
 ```
 If use_scale is true, it will use the scale factor estimated from step 7.
 
-9. Run 'plot_from_yaml.py' to visualize the camera extrinsics. 
+9. Run `verify_world_transform.py`` to double check the alignment of step 8. 
+```
+python verify_world_transform.py --n_cams=17 --root_dir=/media/user/data0/laser_calibrate_2024_4_1/2024_04_01_17_09_58/ --side_len=120 --yaml_dir_name=/media/user/data0/laser_calibrate_2024_4_1/2024_04_01_17_09_58/results/rigspace/calibration_rig/
+```
+10. Run 'plot_from_yaml.py' to visualize the camera extrinsics. 
 ```
 python plot_from_yaml.py --yaml_dir=/media/user/data0/laser_calibrate_2024_4_1/2024_04_01_17_09_58/results/rigspace/calibration_rig/
 ```

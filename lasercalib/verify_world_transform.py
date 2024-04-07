@@ -3,15 +3,18 @@ import pickle as pkl
 import cv2 
 import argparse
 import pprint
-import glob
+import glob 
+import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--yaml_dir_name', type=str, required=True)
 parser.add_argument('--root_dir', type=str, required=True)
 parser.add_argument('--n_cams', type=int, required=True)
 parser.add_argument('--side_len', type=float, required=120.0)
 
 args = parser.parse_args()
 nCams = args.n_cams
+yaml_dir_name = args.yaml_dir_name
 
 cam_names = []
 for file in glob.glob(args.root_dir + "/movies/*.mp4"):
@@ -19,8 +22,17 @@ for file in glob.glob(args.root_dir + "/movies/*.mp4"):
     cam_names.append(file_name[-1][:-4])
 cam_names.sort()
 
-with open(args.root_dir + "/results/calibration.pkl", "rb") as f:
-    camList = pkl.load(f)
+camList = []
+for i in range(nCams):
+    cam_params = {}
+    filename = "/{}/{}.yaml".format(yaml_dir_name, cam_names[i])
+    print(filename)
+    fs = cv2.FileStorage(filename, cv2.FILE_STORAGE_READ)
+    cam_params['camera_matrix'] = fs.getNode("camera_matrix").mat()
+    cam_params['distortion_coefficients'] = fs.getNode("distortion_coefficients").mat()
+    cam_params['tc_ext'] = fs.getNode("tc_ext").mat()
+    cam_params['rc_ext'] = fs.getNode("rc_ext").mat()
+    camList.append(cam_params)
 
 aruco_loc = []
 for i in range(nCams):
@@ -51,10 +63,8 @@ for mk_idx in features.keys():
     undistorted_pts = []
     for idx in range(len(features[mk_idx]['cam_ids'])):
         cam_idx = features[mk_idx]['cam_ids'][idx]
-        distortion = np.zeros((5,1))
-        distortion[0:2, 0] = camList[cam_idx]['d']
         original_points = features[mk_idx]['pts'][idx]
-        ideal_points = cv2.undistortPoints(original_points, camList[cam_idx]['K'].T, distortion, None, camList[cam_idx]['K'].T)[:, 0, :]
+        ideal_points = cv2.undistortPoints(original_points, camList[cam_idx]['camera_matrix'], camList[cam_idx]['distortion_coefficients'], None, camList[cam_idx]['camera_matrix'])[:, 0, :]
         undistorted_pts.append(ideal_points)
     features[mk_idx]['pts_undistorted'] = np.asarray(undistorted_pts)
 
@@ -72,9 +82,9 @@ for mk_idx in features.keys():
         for idx in range(num_views):
             cam_idx = camera_list[idx]
             proj_matrix = np.zeros((3, 4))
-            proj_matrix[0:3, 0:3] = camList[cam_idx]['R'].T
-            proj_matrix[:, 3] = camList[cam_idx]['t']
-            proj_matrix = np.matmul(camList[cam_idx]['K'].T, proj_matrix)
+            proj_matrix[0:3, 0:3] = camList[cam_idx]['rc_ext']
+            proj_matrix[:, 3] = camList[cam_idx]['tc_ext'][:, 0]
+            proj_matrix = np.matmul(camList[cam_idx]['camera_matrix'], proj_matrix)
             p0 = proj_matrix[0]
             p1 = proj_matrix[1]
             p2 = proj_matrix[2]    
@@ -101,9 +111,9 @@ for mk_idx in features.keys():
     for idx in range(num_views):
         cam_idx = camera_list[idx]
         proj_matrix = np.zeros((3, 4))
-        proj_matrix[0:3, 0:3] = camList[cam_idx]['R'].T
-        proj_matrix[:, 3] = camList[cam_idx]['t']
-        proj_matrix = np.matmul(camList[cam_idx]['K'].T, proj_matrix)
+        proj_matrix[0:3, 0:3] = camList[cam_idx]['rc_ext']
+        proj_matrix[:, 3] = camList[cam_idx]['tc_ext'][:, 0]
+        proj_matrix = np.matmul(camList[cam_idx]['camera_matrix'], proj_matrix)
         p0 = proj_matrix[0]
         p1 = proj_matrix[1]
         p2 = proj_matrix[2]  
@@ -120,8 +130,8 @@ for mk_idx in features.keys():
 print("Marker ID: center coordinats:")
 pp = pprint.PrettyPrinter(depth=4)
 pp.pprint(features_center_3d)
-print("Marker ID: corner coordinats:")
-pp.pprint(features_3d)
+# print("Marker ID: corner coordinats:")
+# pp.pprint(features_3d)
 
 delta_pts = []
 for mk_idx in features_3d.keys():
@@ -133,13 +143,40 @@ for mk_idx in features_3d.keys():
 pts = []
 for pt in delta_pts:
     pts.append(np.linalg.norm(pt))
-    print("side length (mm) :", np.linalg.norm(pt))
+    # print("side length (mm) :", np.linalg.norm(pt))
 
 scale_factor = args.side_len/np.mean(pts)
 print("Ratio of real to estimated side length of aruco marker: ", scale_factor)
-with open(args.root_dir + "/results/aruco_corners_3d.pkl", 'wb') as f:
-    pkl.dump(features_3d, f)
-
 features_center_3d['scale_factor'] = scale_factor
-with open(args.root_dir + "/results/aruco_center_3d.pkl", 'wb') as f:
-    pkl.dump(features_center_3d, f)
+
+rig_pts = np.array([[-692.0, -692.0, 0.0], [692.0, -692.0, 0.0], [692, 692, 0.0], [-692, 692, 0.0]]).transpose()
+print(rig_pts)
+
+
+maker_ids = [0, 1, 2, 3]
+label_pts = []
+for mk_idx in maker_ids:
+    label_pts.append(features_center_3d[mk_idx])
+label_pts = np.asarray(label_pts)
+label_pts = label_pts.transpose()
+
+input_pts = label_pts
+target_pts = rig_pts
+
+ax = []
+fig = plt.figure()
+ax.append(fig.add_subplot(1, 1, 1, projection='3d'))
+ax[0].scatter(input_pts[0,:], input_pts[1,:], input_pts[2,:], c='b', label='reconstructed')
+ax[0].scatter(target_pts[0,:], target_pts[1,:], target_pts[2,:], c='r', label='groud truth')
+ax[0].legend()
+
+for i in range(4):
+    x = [input_pts[0,i], target_pts[0,i]]
+    y = [input_pts[1,i], target_pts[1,i]]
+    z = [input_pts[2,i], target_pts[2,i]]
+    ax[0].plot3D(x, y, z, 'gray')
+ax[0].set_xlabel('X Label')
+ax[0].set_ylabel('Y Label')
+ax[0].set_zlabel('Z Label')
+ax[0].set_title("Alignment")
+plt.show()
