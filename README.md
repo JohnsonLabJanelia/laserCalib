@@ -27,7 +27,7 @@ python find_laser_points.py --n_cams=8 --root_dir=/home/user/Calibration/16cam -
 ```
 5. Run `calibrate.py` to calibrate the cameras (edit to adjust for cam number, cam param initialization, and 3D point initialization.  
 ```
-python calibrate.py --root_dir=/home/user/Calibration/16cam --cam_id_for_3d_init 4
+python calibrate.py --root_dir=/home/user/Calibration/16cam --cam_name_for_3d_init Cam710038
 ```
 The calibration result is saved in `results/sba.pkl`.
 Note: 
@@ -46,7 +46,13 @@ python aruco_triangulate.py --n_cams=16 --root_dir=/home/user/Calibration/16cam 
 
 8. Run `label2world.py` fit a rigid body transformation to change the coordinate to desired world coordinate. 
 ```
-python label2world.py --n_cams=16 --root_dir=/home/user/Calibration/16cam
+python label2world.py --n_cams=16 --root_dir=/home/user/Calibration/16cam --use_scale=1
+```
+If use_scale is true, it will use the scale factor estimated from step 7.
+
+9. Run 'plot_from_yaml.py' to visualize the camera extrinsics. 
+```
+python plot_from_yaml.py --yaml_dir=/media/user/data0/laser_calibrate_2024_4_1/2024_04_01_17_09_58/results/rigspace/calibration_rig/
 ```
 
 Some utility function:

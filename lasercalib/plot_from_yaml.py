@@ -9,7 +9,7 @@ import glob
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--yaml_dir', type=str, required=True)
-parser.add_argument('--ordered', type=int, required=True)
+parser.add_argument('--ordered', type=int, default=0)
 
 args = parser.parse_args()
 
