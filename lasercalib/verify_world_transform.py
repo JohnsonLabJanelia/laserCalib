@@ -175,8 +175,8 @@ for i in range(4):
     y = [input_pts[1,i], target_pts[1,i]]
     z = [input_pts[2,i], target_pts[2,i]]
     ax[0].plot3D(x, y, z, 'gray')
-ax[0].set_xlabel('X Label')
-ax[0].set_ylabel('Y Label')
-ax[0].set_zlabel('Z Label')
+ax[0].set_xlabel('X (mm)')
+ax[0].set_ylabel('Y (mm)')
+ax[0].set_zlabel('Z (mm)')
 ax[0].set_title("Alignment")
 plt.show()
