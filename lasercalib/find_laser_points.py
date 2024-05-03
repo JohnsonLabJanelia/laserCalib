@@ -16,7 +16,6 @@ parser.add_argument('--width', type=int, required=True)
 parser.add_argument('--height', type=int, required=True)
 
 args = parser.parse_args()
-
 start_time = time.time()
 
 pp = pprint.PrettyPrinter(indent=0)

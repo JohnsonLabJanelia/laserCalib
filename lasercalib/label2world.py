@@ -94,7 +94,6 @@ print(transformation_matrix)
 print("transformed points")
 print(transformed_pts)
 
-## TODO: fit scaling matrix together
 if args.use_scale == 1:
     scale_mag = label_dict['scale_factor']
 else:

@@ -22,7 +22,6 @@ cam_names.sort()
 nCams = len(cam_names)
 
 if args.ordered == 1:
-    print("Here")
     cam_names = []
     for i in range(nCams):
         cam_names.append("Cam{}".format(i))

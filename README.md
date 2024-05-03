@@ -52,7 +52,7 @@ python aruco_triangulate.py --n_cams=16 --root_dir=/home/user/Calibration/16cam 
 ```
 python label2world.py --n_cams=16 --root_dir=/home/user/Calibration/16cam --use_scale=1
 ```
-If use_scale is true, it will use the scale factor estimated from step 7.
+If use_scale is true, it will use the scale factor estimated from step 7, otherwise it is set to 1 (no scaling).
 
 9. Run `verify_world_transform.py`` to double check the alignment of step 8. 
 ```

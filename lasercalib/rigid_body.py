@@ -67,7 +67,6 @@ def load_camera_parameters_from_yaml(file_name):
     }
     return one_calib
 
-# use a camera in the ceiling (doesn't move much to initialize)
 def Project(points, intrinsic, distortion, rotation_matrix, tvec):
     result = []
     if len(points) > 0:
