@@ -4,9 +4,12 @@ import pickle as pkl
 import subprocess as sp
 import queue
 import signal
+import cv2 as cv
+from tqdm import tqdm
+
 
 class SingleMovieManager(threading.Thread):
-    def __init__(self, threadID, root_dir, cam_name, frame_range, width, height):
+    def __init__(self, threadID, root_dir, cam_name, frame_range):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.thread_name = "Thread-" + str(self.threadID)
@@ -20,8 +23,17 @@ class SingleMovieManager(threading.Thread):
         self.centroids[:] = np.nan
         self.centroid_threads = []
         self.q = queue.Queue()
-        self.width = width
-        self.height = height
+        self.get_width_and_height()
+
+    def get_width_and_height(self):
+        video_stream = cv2.VideoCapture(self.movie_path)
+        if (video_stream.isOpened()== False): 
+            print("Error opening video: ", self.movie_path)
+        else:
+            self.width  = int(video_stream.get(cv.CAP_PROP_FRAME_WIDTH))   # float `width`
+            self.height = int(video_stream.get(cv.CAP_PROP_FRAME_HEIGHT))  # float `height`
+        video_stream.release()
+
 
     def ffmpeg_loader(self):
         FFMPEG_BIN = "ffmpeg"
@@ -32,7 +44,7 @@ class SingleMovieManager(threading.Thread):
             '-loglevel', 'error',
             '-i', MOVIE_PATH,
             '-vframes', str(self.frameRange[1]), 
-            '-threads', str(8),
+            '-threads', str(1),
             '-f', 'image2pipe',
             '-pix_fmt', 'rgb24',
             '-vcodec', 'rawvideo', '-']

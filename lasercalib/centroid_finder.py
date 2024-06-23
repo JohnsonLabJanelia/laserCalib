@@ -6,7 +6,7 @@ from feature_detection import green_laser_finder
 
 
 class CentroidFinder(threading.Thread):
-    def __init__(self, root_dir, cam_name, thread_idx, q, centroids):
+    def __init__(self, root_dir, cam_name, thread_idx, q, centroids, verbose=False):
         threading.Thread.__init__(self)
         self.thread_idx = thread_idx
         self.thread_name = cam_name + "_thread" + str(thread_idx)
@@ -14,6 +14,7 @@ class CentroidFinder(threading.Thread):
         self.cam_name = cam_name
         self.q = q
         self.centroids = centroids
+        self.verbose = verbose
 
     def process_queue(self):
         small_footprint = morphology.disk(1)
@@ -33,7 +34,8 @@ class CentroidFinder(threading.Thread):
                                     small_footprint, 
                                     big_footprint)
             if laser_coord:
-                print(self.thread_name, "frame: ", frame_idx, "centroid:", laser_coord)
+                if self.verbose:
+                    print(self.thread_name, "frame: ", frame_idx, "centroid:", laser_coord)
                 self.centroids[frame_idx, :] = laser_coord
 
     def run(self):

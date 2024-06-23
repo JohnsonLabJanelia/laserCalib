@@ -4,7 +4,7 @@ import cv2
 from skimage import morphology
 from skimage import measure
 import numpy as np
-from feature_detection import green_laser_finder
+from feature_detection import *
 import pickle as pkl
 import argparse
 import os
@@ -65,9 +65,9 @@ class VideoGet:
                 
                 if self.laser:
                     # process frames
-                    laser_coord = green_laser_finder(frame, 70, 1100, morphology.disk(1), morphology.disk(4))
+                    laser_coord = green_laser_finder_faster(frame, 50)
                     if laser_coord:
-                        frame = cv2.circle(frame, (int(laser_coord[1]), int(laser_coord[0])), 50, (0, 0, 255), 5)
+                        frame = cv2.circle(frame, (int(laser_coord[1]), int(laser_coord[0])), 100, (0, 0, 255), 25)
 
                 if self.aruco:
                     frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -162,7 +162,11 @@ for i in range(num_cams):
 for thread in threadpool:
     thread.start()
 
-imgs = [None] * num_cams
+
+if num_cams == 1:
+    imgs = [None]
+else:
+    imgs = [None] * int(np.ceil(num_cams / 4.0) * 4)
 
 while True:
     key = cv2.waitKey(1) & 0xFF
@@ -173,29 +177,34 @@ while True:
     if key == ord('p'):
         cv2.waitKey(-1) #wait until any key is pressed
 
-    for i in range(num_cams):
-        frame_id, img = view_queues[i].get()
-        cv2.putText(img, "{}: {:.0f}".format(cam_names[i], frame_id),
-            (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255))
-        imgs[i] = img
+    for i in range(len(imgs)):
+        if (i < num_cams):
+            frame_id, img = view_queues[i].get()
+            cv2.putText(img, "{}: {:.0f}".format(cam_names[i], frame_id),
+                (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255))
+            imgs[i] = img
+        else:
+            blank_image = np.zeros((550, 802, 3), np.uint8)
+            imgs[i] = blank_image
 
     if (img is None):
             break
     
-    layout = []
-    for i in range(num_cams):
-        if i % 4 == 0:
-            temp = []
-        temp.append(imgs[i])
-        if i % 4 == 3:
-            layout.append(temp.copy())
-        i = i + 1
-    img_tile = concat_vh(layout)
-
-    img_tile_resize = cv2.resize(img_tile, (2100, 1200))
-    cv2.imshow('Frame', img_tile_resize)
-
-
+    if num_cams != 1:
+        layout = []
+        for i in range(len(imgs)):
+            if i % 4 == 0:
+                temp = []
+            temp.append(imgs[i])
+            if i % 4 == 3:
+                layout.append(temp.copy())
+            i = i + 1
+        img_tile = concat_vh(layout)
+        img_tile_resize = cv2.resize(img_tile, (2100, 1200))
+        cv2.imshow('Frame', img_tile_resize)
+    else:
+        cv2.imshow('Frame', imgs[0])
+    
 for i, thread in enumerate(threadpool):
     thread.stop()
 

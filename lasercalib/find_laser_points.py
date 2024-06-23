@@ -12,8 +12,7 @@ import glob
 parser = argparse.ArgumentParser()
 parser.add_argument('--root_dir', type=str, required=True)
 parser.add_argument('--frame_range', nargs="+", type=int, required=True)
-parser.add_argument('--width', type=int, required=True)
-parser.add_argument('--height', type=int, required=True)
+parser.add_argument('--n_cams', type=int, required=False, default=0)
 
 args = parser.parse_args()
 start_time = time.time()
@@ -37,14 +36,19 @@ for file in glob.glob(args.root_dir + "/movies/*.mp4"):
     mp4_files.append(file_name[-1][:-4])
 
 mp4_files.sort()
-n_cams = len(mp4_files)
+# n_cams = len(mp4_files)
+if (args.n_cams==0):
+    n_cams = len(mp4_files)
+else:
+    n_cams = args.n_cams
+
 print("Number of cameras: ", n_cams)
 
 threadpool = []
 
 for i in range(n_cams):
     cam_name = mp4_files[i]
-    threadpool.append(SingleMovieManager(i, args.root_dir, cam_name, args.frame_range, args.width, args.height))
+    threadpool.append(SingleMovieManager(i, args.root_dir, cam_name, args.frame_range))
 
 for thread in threadpool:
     thread.start()

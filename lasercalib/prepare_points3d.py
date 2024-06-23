@@ -29,7 +29,8 @@ for dataset_idx, root_dir in enumerate(input_folders):
 
     pts = centroids_dict['centroids']
     cam_names = centroids_dict['cam_names']
-
+    
+    import pdb; pdb.set_trace()
     # flip xy (regionprops orders)
     pts = np.flip(pts, axis=1)
     nPts = pts.shape[0]

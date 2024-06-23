@@ -1,6 +1,6 @@
 from skimage import morphology
 from skimage import measure
-import cv2
+import cv2 as cv
 import numpy as np
 
 def green_laser_finder(img, 
@@ -17,8 +17,8 @@ def green_laser_finder(img,
     cc = morphology.binary_closing(cc, big_footprint)
 
     ## roi 
-    mask_roi = np.zeros_like(green)
-    mask_roi = cv2.circle(mask_roi, (1604,1100), 1100, 255, -1)
+    # mask_roi = np.zeros_like(green)
+    # mask_roi = cv2.circle(mask_roi, (1604,1100), 1100, 255, -1)
     # cc = mask_roi * cc
 
     labels = measure.label(cc, background=0, return_num=False)
@@ -36,5 +36,19 @@ def green_laser_finder(img,
 
     if len(idx) == 1:
         return props[idx[0]].centroid
+    else:
+        return None
+
+
+
+def green_laser_finder_faster(frame, laser_intensity_thresh):
+    green = frame[:,:,1]
+    ret,thresh = cv.threshold(green,laser_intensity_thresh, 255, 0)
+    M = cv.moments(thresh)
+    # calculate x,y coordinate of center
+    if (M["m00"] != 0):
+        cy = int(M["m10"] / M["m00"])
+        cx = int(M["m01"] / M["m00"])
+        return (cx, cy)
     else:
         return None

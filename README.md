@@ -23,7 +23,11 @@ We are using Linux. You will need to install `ffmpeg` on your machine such that 
 2. Place all the laser videos in a folder called `movies`, under the parent root folder. 
 3. Run the `find_laser_points.py` script to extract centroids from these images and save them to a `/results/*.pkl` file. For instance: 
 ```
-python find_laser_points.py --root_dir=/home/user/Calibration/16cam --frame_range 0 5000 --width 3208 --height 2200
+python find_laser_points.py --root_dir=/home/user/Calibration/16cam --frame_range 0 5000
+```
+<em>New faster implementation</em>.
+```
+python extract_laser_points.py --root_dir=/media/user/data0/laser_calib_2024_06_20/2024_06_20_17_12_14/ --frame_range 0 1500
 ```
 4. Run `prepare_points3d.py` to prepare datasets for calibration. It will use one camera initial parameters, and ground truth z plane value to infer points 3d locations. Please select a camera that doesn't move much. 
 ```
