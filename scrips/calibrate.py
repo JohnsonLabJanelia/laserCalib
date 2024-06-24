@@ -4,13 +4,13 @@ import matplotlib.pyplot as plt
 import pickle as pkl
 from datetime import date
 import seaborn as sns
-import pySBA
-from convert_params import load_from_blender
-from convert_params import *
+from lasercalib.pySBA import PySBA
+from lasercalib.convert_params import load_from_blender
+from lasercalib.convert_params import *
 import argparse
-from sba_print import sba_print
+from lasercalib.sba_print import sba_print
 import os
-from camera_visualizer import CameraVisualizer
+from lasercalib.camera_visualizer import CameraVisualizer
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--root_dir', type=str, required=True)
@@ -82,7 +82,7 @@ ax.set_zlim([-100, 1800])
 ax.set_title("rig space")
 
 
-sba = pySBA.PySBA(cameraArray, points_3d, points_2d, camera_ind, point_ind)
+sba = PySBA(cameraArray, points_3d, points_2d, camera_ind, point_ind)
 sba_print(sba, nCams, "Initialization", color_palette=my_palette)
 
 # sba.bundleAdjust_nocam(1e-6)

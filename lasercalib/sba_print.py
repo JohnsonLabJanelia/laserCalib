@@ -1,5 +1,5 @@
 from prettytable import PrettyTable
-from camera_visualizer import CameraVisualizer
+from lasercalib.camera_visualizer import CameraVisualizer
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.spatial.transform import Rotation as R
@@ -17,6 +17,7 @@ def sba_print(sba, nCams, title, xlim=[-1500, 1500], ylim=[-1500, 1500], zlim=[-
     r = sba.project(sba.points3D[sba.point2DIndices], sba.cameraArray[sba.cameraIndices]) - sba.points2D
     print(r.shape)
     r = np.sqrt(np.sum(r**2, axis=1))
+    fig = plt.figure()
     plt.hist(r[r<np.percentile(r, 99)])
     plt.xlabel('Reprojection Error')
     plt.title(title)

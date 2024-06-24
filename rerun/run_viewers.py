@@ -4,26 +4,25 @@ import cv2
 from skimage import morphology
 from skimage import measure
 import numpy as np
-from feature_detection import *
+from lasercalib.feature_detection import *
 import pickle as pkl
 import argparse
 import os
-import glob
-
+import json
 
 def concat_vh(list_2d):
     return cv2.vconcat([cv2.hconcat(list_h) for list_h in list_2d])
 
 class VideoGet:
-    def __init__(self, src_dir, q, cam_name, laser=False, aruco=False):
+    def __init__(self, src_dir, save_dir, q, cam_name, laser=False, aruco=False):
         
         self.src_dir = src_dir
-
+        self.save_dir = save_dir
         if aruco:
-            video_source = src_dir + "/aruco/{}.mp4".format(cam_name)
+            video_source = video_dir + "/{}.mp4".format(cam_name)
             
         else:
-            video_source = src_dir + "/movies/{}.mp4".format(cam_name)
+            video_source = video_dir + "/{}.mp4".format(cam_name)
         print(video_source)
         self.stream = cv2.VideoCapture(video_source)
         if (self.stream.isOpened()== False): 
@@ -98,19 +97,19 @@ class VideoGet:
                         topLeft = (int(topLeft[0]), int(topLeft[1]))
 
                         # draw the bounding box of the ArUCo detection
-                        cv2.line(frame, topLeft, topRight, (0, 255, 0), 5)
-                        cv2.line(frame, topRight, bottomRight, (0, 0, 255), 5)
-                        cv2.line(frame, bottomRight, bottomLeft, (0, 0, 255), 5)
-                        cv2.line(frame, bottomLeft, topLeft, (0, 0, 255), 5)
+                        cv2.line(frame, topLeft, topRight, (0, 255, 0), 15)
+                        cv2.line(frame, topRight, bottomRight, (0, 0, 255), 15)
+                        cv2.line(frame, bottomRight, bottomLeft, (0, 0, 255), 15)
+                        cv2.line(frame, bottomLeft, topLeft, (0, 0, 255), 15)
                         # compute and draw the center (x, y)-coordinates of the ArUco marker                        
                         cX = int((topLeft[0] + bottomRight[0]) / 2.0)
                         cY = int((topLeft[1] + bottomRight[1]) / 2.0)
-                        cv2.circle(frame, (cX, cY), 5, (0, 0, 255), -1)                        
+                        cv2.circle(frame, (cX, cY), 15, (0, 0, 255), -1)                        
                         # draw the ArUco marker ID on the frame
                         cv2.putText(frame, str(markerID),
                             (topLeft[0], topLeft[1] - 15),
                             cv2.FONT_HERSHEY_SIMPLEX,
-                            3, (0, 255, 0), 5)
+                            3, (0, 255, 0), 15)
                         
                         # # coplanar points from one view for pose estimation suffers from ambiguity: https://github.com/opencv/opencv/issues/8813 
                         # rvecs, tvecs, markerPoints = cv2.aruco.estimatePoseSingleMarkers(markerCorner.reshape((1, 4, 2)), 120, self.cam_matrix, self.distortion)
@@ -125,7 +124,7 @@ class VideoGet:
     def stop(self):
         # save the corners 
         if self.aruco:
-            aruco_marker_folder = self.src_dir + "/results/aruco_corners/" 
+            aruco_marker_folder = self.save_dir + "/results/aruco_corners/" 
             if not os.path.exists(aruco_marker_folder):
                 os.makedirs(aruco_marker_folder)
             with open(aruco_marker_folder + "{}_aruco.pkl".format(self.cam_name), 'wb') as f:
@@ -135,18 +134,23 @@ class VideoGet:
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--root_dir', type=str, required=True)
-parser.add_argument('--n_cams', type=int, required=True)
-parser.add_argument('--mode', choices=['laser', 'aruco'], required=True)
+parser.add_argument('-c', '--config', type=str, required=True)
+parser.add_argument('-m', '--mode', choices=['laser', 'aruco'], required=True)
+parser.add_argument('-i', '--dataset_idx', type=int, required=False, default=0)
 args = parser.parse_args()
+dataset_idx = args.dataset_idx
 
+config_dir = args.config
+with open(config_dir + '/config.json', 'r') as f:
+    calib_config = json.load(f)
+
+root_dir = calib_config['root_dir']
+cam_serials = calib_config['cam_serials']
 cam_names = []
-for file in glob.glob(args.root_dir + "/movies/*.mp4"):
-    file_name = file.split("/")
-    cam_names.append(file_name[-1][:-4])
-cam_names.sort()
+for cam_serial in cam_serials:
+    cam_names.append("Cam" + cam_serial)
+num_cams = len(cam_names)
 
-num_cams = args.n_cams
 view_queues = []
 
 for i in range(num_cams):
@@ -155,9 +159,13 @@ for i in range(num_cams):
 threadpool = []
 for i in range(num_cams):
     if args.mode == "aruco":
-        threadpool.append(VideoGet(args.root_dir, view_queues[i], cam_names[i], laser=False, aruco=True))
+        aruco_dataset = calib_config['aruco']
+        video_dir = os.path.join(root_dir + aruco_dataset)
+        threadpool.append(VideoGet(video_dir, config_dir, view_queues[i], cam_names[i], laser=False, aruco=True))
     else:
-        threadpool.append(VideoGet(args.root_dir, view_queues[i], cam_names[i], laser=True, aruco=False))
+        laser_datasets = calib_config['lasers']
+        video_dir = os.path.join(root_dir + laser_datasets[dataset_idx])
+        threadpool.append(VideoGet(video_dir, config_dir, view_queues[i], cam_names[i], laser=True, aruco=False))
 
 for thread in threadpool:
     thread.start()

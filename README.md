@@ -33,14 +33,14 @@ python extract_laser_points.py --root_dir=/media/user/data0/laser_calib_2024_06_
 ```
 python prepare_points3d.py -f /media/user/data0/laser_calibrate_2024_4_1/2024_04_01_17_24_00/ /media/user/data0/laser_calibrate_2024_4_1/2024_04_01_17_09_58/ -z 105 0 -o /media/user/data0/laser_calibrate_2024_4_1/2024_04_01_17_09_58/ -n Cam710038
 ```
-5. Run `calibrate.py` to calibrate the cameras (edit to adjust for cam number, cam param initialization, and 3D point initialization.  
+Note: 
+- It is probably important to initialize these camera parameters in the ballpark of the expected output. These calibration parameters could be estimated from a previous calibration or from a drawing/digital twin of the rig. To innitialize camera postions from blender model, put the `camera_dicts.pkl` in `results`.  
+- You will also need to provide an initial guess of the 3D world coordinates for each laser pointer observation. We simply used the pixel location of the extracted laser pointer centroids from one of our cameras (the central ceiling camera; blue camera in image below).
+5. Run `calibrate.py` to calibrate the cameras
 ```
 python calibrate.py --root_dir=/home/user/Calibration/16cam
 ```
-The calibration result is saved in `results/sba.pkl`.
-Note: 
-- It is probably important to initialize these camera parameters in the ballpark of the expected output. These calibration parameters could be estimated from a previous calibration or from a drawing/digital twin of the rig. To innitialize camera postions from blender model, put the `camera_dicts.pkl` in `results`.  
-- You will also need to provide an initial guess of the 3D world coordinates for each laser pointer observation. We simply used the pixel location of the extracted laser pointer centroids from one of our cameras (the central ceiling camera; blue camera in image below).  
+The calibration result is saved in `results/sba.pkl`.  
 6. Use the `movie_viewer.py` to run aruco based feature detection. 
 ```
 python movie_viewer.py --n_cams=16 --root_dir=/home/user/Calibration/16cam --mode aruco

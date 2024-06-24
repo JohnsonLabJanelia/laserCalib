@@ -3,7 +3,7 @@ import numpy as np
 import pickle as pkl
 import argparse
 import glob
-from feature_detection import *
+from lasercalib.feature_detection import *
 from multiprocessing import Pool
 from tqdm import tqdm
 import cv2 as cv

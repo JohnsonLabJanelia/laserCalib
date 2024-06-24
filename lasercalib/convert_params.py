@@ -1,6 +1,6 @@
 import numpy as np
 import pickle as pkl
-from rigid_body import get_inverse_transformation
+from lasercalib.rigid_body import get_inverse_transformation
 from scipy.spatial.transform import Rotation as R
 import cv2
 

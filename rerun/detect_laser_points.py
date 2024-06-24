@@ -2,8 +2,7 @@ import os
 import numpy as np
 import pickle as pkl
 import argparse
-import glob
-from feature_detection import *
+from lasercalib.feature_detection import *
 from multiprocessing import Pool
 from tqdm import tqdm
 import cv2 as cv
@@ -13,30 +12,28 @@ import json
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-c', '--config', type=str, required=True)
-parser.add_argument('-i', '--dataset_idx', type=int, required=False, default=0)
+parser.add_argument('-i', '--dataset_idx', type=int, required=False, default=-1)
 
 args = parser.parse_args()
 
-with open(args.config, 'r') as f:
+config_dir = args.config
+with open(config_dir + '/config.json', 'r') as f:
     calib_config = json.load(f)
 dataset_idx = args.dataset_idx
 
 root_dir = calib_config['root_dir']
 laser_datasets = calib_config['lasers']
-
+cam_serials = calib_config['cam_serials']
 cam_names = []
-one_dataset_dir = os.path.join(root_dir + laser_datasets[0])
-for file in glob.glob(one_dataset_dir + "/*.mp4"):
-    file_name = file.split("/")
-    cam_names.append(file_name[-1].split('.')[0])
-cam_names.sort()
+for cam_serial in cam_serials:
+    cam_names.append("Cam" + cam_serial)
 n_cams = len(cam_names)
 print("Number of cameras: ", n_cams)
 
 def extract_laser_points_per_camera(dataset_camera_idx):
     dataset_idx, camera_idx = dataset_camera_idx
     video_file = os.path.join(root_dir, "{}/".format(laser_datasets[dataset_idx]) + cam_names[camera_idx] + ".mp4")
-    output_file = os.path.join(root_dir, "results/{}/".format(laser_datasets[dataset_idx]) + cam_names[camera_idx] + "_centroids.pkl")
+    output_file = os.path.join(config_dir, "results/{}/".format(laser_datasets[dataset_idx]) + cam_names[camera_idx] + "_centroids.pkl")
     vr = cv.VideoCapture(video_file)
 
     centroids = np.zeros((frame_end - frame_start, 2), dtype=float)
@@ -63,15 +60,14 @@ def extract_laser_points_per_camera(dataset_camera_idx):
 
 
 if __name__ == '__main__':
-
-    if dataset_idx != 0:
+    if dataset_idx != -1:
         print(laser_datasets[dataset_idx])
         frame_start = calib_config['frames'][dataset_idx][0]
         frame_end = calib_config['frames'][dataset_idx][1]
 
         start_time = time.time()
         # make folder 
-        results_dir = os.path.join(root_dir, 'results')
+        results_dir = os.path.join(config_dir, 'results')
         if not os.path.exists(results_dir):
             os.makedirs(results_dir)
 
@@ -93,7 +89,7 @@ if __name__ == '__main__':
 
             start_time = time.time()
             # make folder 
-            results_dir = os.path.join(root_dir, 'results')
+            results_dir = os.path.join(config_dir, 'results')
             if not os.path.exists(results_dir):
                 os.makedirs(results_dir)
 
