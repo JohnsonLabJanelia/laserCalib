@@ -1,5 +1,3 @@
-
-
 1. Extract laser points
 ```
 python detect_laser_points.py -c /media/user/data0/laser_calib_2024_05_02_tutorial/calib/ -i 0
