@@ -21,4 +21,7 @@ python triangulate_aruco.py -c /media/user/data0/laser_calib_2024_05_02_tutorial
 6. transform to the world coordinate
 python transform_world.py -c /media/user/data0/laser_calib_2024_05_02_tutorial/calib/
 
+7. To check on the results
+python verify_world.py -c /media/user/data0/laser_calib_2024_06_20/calib/
+
 Final reasults in root_dir/calib/results/calibration_rig/
