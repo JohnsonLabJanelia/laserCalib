@@ -248,8 +248,8 @@ with open(config_dir + "/results/sba.pkl", 'rb') as f:
 
 sba.points3D = laser_pts_transformed.copy()[:3,:].transpose()
 
-sba.bundle_adjustment_camonly(1e-4)
-# sba.bundleAdjust(1e-4)
+# sba.bundle_adjustment_camonly(1e-4)
+sba.bundleAdjust(1e-5)
 sba_print(sba, n_cams, "Refit", zlim=[-100, 1800], color_palette=my_palette)
 
 new_camList = []
