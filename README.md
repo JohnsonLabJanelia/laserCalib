@@ -39,7 +39,6 @@ python detect_laser_points.py -c /media/user/data0/laser_calib_2024_05_02_tutori
 2. infer 3d points
 ```
 python get_points3d.py -c /media/user/data0/laser_calib_2024_05_02_tutorial/calib/
-
 ```
 
 3. run calibration
