@@ -17,7 +17,7 @@ python -m pip install -U prettytable
 ```
 We are using Linux. You will need to install `ffmpeg` on your machine such that the `ffmpeg` command works from the terminal.  
 
-Under laserCalib folder, install this library
+Under laserCalib folder, install this library as a dev package
 ```
 pip install -e  .
 ``` 
