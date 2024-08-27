@@ -19,15 +19,17 @@ We are using Linux. You will need to install `ffmpeg` on your machine such that 
 
 ### Collect datasets  
 1. Laser pointer videos  
-Use syncrhonized cameras. Turn off all the lights in the rig. This code is currently written for calibrating color cameras. If you are using monochrome cameras, please adjust the centroid-finding code to accept single channel images. If using color cameras, please use a green laser pointer. If you'd rather use a blue or red laser pointer, please adjust the centroid-finding code to use the red or blue image channel (right now it is using the green channel to find the green laser pointer centroid in each image). Use short (~100-500 microsecond) camera exposures and low gain such that the only bright spot in the image is from the laser pointer. The goal is to collect several thousand images on each camera of the laser pointer spot. You can shine the spot onto the floor of the arena (see example below). Collect laser point videos for two planes. Please also provide the ground truth z-plane in the calibration config file in the world frame. This is used for unprojecting 2d point to 3d. 
+- Use syncrhonized cameras. Turn off all the lights in the rig. This code is currently written for calibrating color cameras. If you are using monochrome cameras, please adjust the centroid-finding code to accept single channel images. If using color cameras, please use a green laser pointer. If you'd rather use a blue or red laser pointer, please adjust the centroid-finding code to use the red or blue image channel (right now it is using the green channel to find the green laser pointer centroid in each image). Use short (~100-500 microsecond) camera exposures and low gain such that the only bright spot in the image is from the laser pointer. The goal is to collect several thousand images on each camera of the laser pointer spot. You can shine the spot onto the floor of the arena (see example below). 
+- Collect laser point videos for two planes. Please also provide the ground truth z-plane in the calibration config file in the world frame. This is used for unprojecting 2d point to 3d. 
 2. Aruco marker videos 
 Aruco markers are used as global landmarks for the world frame registration. The center of the markers are used for registration. User must provide ground truth 3d coordinates in the calibration config file. Collect short video of aruco markers.
 3. Create a config file for calibration. Example config file is provided in example folder. 
 4. Initial estimation of the cameras are required due to many local minimum in multiview bundle adjustment. Future work will use two-view geometry to remove this constraint. Please put the folder that contains camera initial parameter estimation in the same folder as config file. Example provided in the example folder.  
 
 ### Calibration steps
-In the script folder, 
+Assuming the config.json is in the folder /media/user/data0/laser_calib_2024_05_02_tutorial/calib/results/calibration_rig/
 
+In the script folder, run 
 1. Extract laser points
 ```
 python detect_laser_points.py -c /media/user/data0/laser_calib_2024_05_02_tutorial/calib/ -i 0
@@ -35,22 +37,35 @@ python detect_laser_points.py -c /media/user/data0/laser_calib_2024_05_02_tutori
 ```
 
 2. infer 3d points
+```
 python get_points3d.py -c /media/user/data0/laser_calib_2024_05_02_tutorial/calib/
 
+```
+
 3. run calibration
+```
 python calibrate_camera.py -c /media/user/data0/laser_calib_2024_05_02_tutorial/calib/
+```
 
 4. run viewers to extract aruco markers, press `q` to exit.  
+```
 python run_viewers.py -c /media/user/data0/laser_calib_2024_05_02_tutorial/calib/ -m aruco
+```
 
 5. triangulate aurco markers
+```
 python triangulate_aruco.py -c /media/user/data0/laser_calib_2024_05_02_tutorial/calib/
+```
 
 6. register to the world coordinate
+```
 python register_world.py -c /media/user/data0/laser_calib_2024_05_02_tutorial/calib/
+```
 
 7. To check on the results
+```
 python verify_world.py -c /media/user/data0/laser_calib_2024_05_02_tutorial/calib/
+```
 
 Final reasults in /media/user/data0/laser_calib_2024_05_02_tutorial/calib/results/calibration_rig/
 
