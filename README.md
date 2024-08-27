@@ -70,7 +70,7 @@ python verify_world.py -c /media/user/data0/laser_calib_2024_05_02_tutorial/cali
 Final reasults in /media/user/data0/laser_calib_2024_05_02_tutorial/calib/results/calibration_rig/
 
 
-Some utility function:
+### Some utility function:
 1. `movie_viewer.py`: visualize laser detection algorithm, `python movie_viewer.py --n_cams=16 --root_dir=/home/user/Calibration/16cam --mode laser`. 
 2. `get_video_pixel.py`: find the pixel rgb value for mouse selectable pixel. 
 
