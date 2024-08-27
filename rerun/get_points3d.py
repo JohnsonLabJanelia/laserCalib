@@ -23,6 +23,7 @@ cam_name_for_3d_init = calib_config['cam_name_for_3d_init']
 min_num_cam_per_point = calib_config['min_num_cam_per_point']
 z_gt = calib_config['z_gt']
 cam_serials = calib_config['cam_serials']
+calib_init = calib_config['calib_init']
 cam_names = []
 for cam_serial in cam_serials:
     cam_names.append("Cam" + cam_serial)
@@ -84,7 +85,7 @@ for dataset_idx in range(len(laser_datasets)):
             points_2d[ind, :] = in_pts[i, :, j].copy()
             ind += 1
 
-    init_camera_filename = config_dir + "/calib_init/{}.yaml".format(cam_name_for_3d_init)
+    init_camera_filename = os.path.join(config_dir, calib_init) + "/{}.yaml".format(cam_name_for_3d_init)
     init_camera_parameter = load_camera_parameters_from_yaml(init_camera_filename)
 
     projected_points = in_pts[:, :, cam_idx_3dpts]

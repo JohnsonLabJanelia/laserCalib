@@ -21,7 +21,7 @@ args = parser.parse_args()
 config_dir = args.config
 with open(config_dir + '/config.json', 'r') as f:
     calib_config = json.load(f)
-
+calib_init = calib_config['calib_init']
 laser_datasets = calib_config['lasers']
 cam_serials = calib_config['cam_serials']
 cam_names = []
@@ -52,7 +52,8 @@ my_palette = sns.color_palette("rocket_r", n_cams)
 
 ## blender initialization
 # cameraArray = load_from_blender(root_dir + "/results/camera_dicts.pkl", nCams)
-cameraArray = initialize_from_checkerboard(config_dir + "/calib_init/", n_cams, cam_names)
+calibration_path = os.path.join(config_dir, calib_init)
+cameraArray = initialize_from_checkerboard(calibration_path, n_cams, cam_names)
 camList = []
 for i in range(n_cams):
     camList.append(sba_to_readable_format(cameraArray[i,:]))

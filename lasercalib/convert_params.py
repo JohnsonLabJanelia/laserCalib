@@ -111,3 +111,13 @@ def readable_format_to_aruco_format(save_root, nCams, camList, cam_names):
         s.write('rc_ext', camList[i]['R'].T)
         s.write('tc_ext', camList[i]['t'])
         s.release()
+
+def save_aruco_format(save_root, nCams, aruco_cam_list, cam_names):
+    for i in range(nCams):
+        output_filename = save_root + '{}.yaml'.format(cam_names[i])
+        s = cv2.FileStorage(output_filename, cv2.FileStorage_WRITE)
+        s.write('camera_matrix', aruco_cam_list[i]['camera_matrix'])
+        s.write('distortion_coefficients', aruco_cam_list[i]['distortion_coefficients'])
+        s.write('rc_ext', aruco_cam_list[i]['rc_ext'])
+        s.write('tc_ext', aruco_cam_list[i]['tc_ext'])
+        s.release()
