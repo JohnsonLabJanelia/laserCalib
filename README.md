@@ -17,6 +17,11 @@ python -m pip install -U prettytable
 ```
 We are using Linux. You will need to install `ffmpeg` on your machine such that the `ffmpeg` command works from the terminal.  
 
+Under laserCalib folder, install this library
+```
+pip install -e  .
+``` 
+
 ### Collect datasets  
 1. Laser pointer videos  
 - Use syncrhonized cameras. Turn off all the lights in the rig. This code is currently written for calibrating color cameras. If you are using monochrome cameras, please adjust the centroid-finding code to accept single channel images. If using color cameras, please use a green laser pointer. If you'd rather use a blue or red laser pointer, please adjust the centroid-finding code to use the red or blue image channel (right now it is using the green channel to find the green laser pointer centroid in each image). Use short (~100-500 microsecond) camera exposures and low gain such that the only bright spot in the image is from the laser pointer. The goal is to collect several thousand images on each camera of the laser pointer spot. You can shine the spot onto the floor of the arena (see example below). 
