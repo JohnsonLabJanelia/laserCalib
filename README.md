@@ -90,5 +90,7 @@ Scipy bundle adjustment cookbook: http://scipy-cookbook.readthedocs.io/items/bun
 
 FFmpeg python wrapper: https://github.com/kkroening/ffmpeg-python  
 
+Multiple view Camera calibration tool: https://github.com/cvlab-epfl/multiview_calib
+
 ## Acknowledgements  
 We thank he authors of pyBSA (https://github.com/jahdiel), the Scipy Cookbook, and the Camera Visualizer Tool (https://github.com/demul) used in this project. We adapted their code (see Reference Section). We thank Selmaan Chettih (https://twitter.com/selmaanchettih) for advice and help in getting this project started with pyBSA. We thank David Schauder (https://github.com/porterbot) and Ratan Othayoth (https://github.com/othayoth) for help in synchronizing cameras.  
