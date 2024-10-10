@@ -35,16 +35,15 @@ pip install -e  .
 - Collect laser point videos for two planes. Please also provide the ground truth z-plane in the calibration config file in the world frame. The ground truth z-planes are used for unprojecting 2d point to 3d.
 
 
-2. Aruco marker videos
-
-
-Aruco markers are used as global landmarks for the world frame registration. The center of the markers are used for registration. Users must provide ground truth 3d coordinates in the calibration config file. Collect short videos of aruco markers.
+2. Collect short videos of aruco markers. Aruco markers are used as global landmarks for the world frame registration. The center of the markers are used for registration. Users must provide ground truth 3d coordinates in the calibration config file. .
 
 
 3. Create a config file for calibration. Example config file is provided in the example folder.
 
 
-4. Initial estimation of the cameras are required due to many local minimums in multiview bundle adjustment. Future work will use two-view geometry to remove this constraint. Please put the folder that contains camera initial parameter estimation in the same folder as the config file. <strong>Example provided in the example folder</strong>. 
+4. Initial estimation of the cameras are required due to many local minimums in multiview bundle adjustment. Future work will use two-view geometry to remove this constraint. Please put the folder that contains camera initial parameter estimation in the same folder as the config file. 
+
+<strong>Example provided in the example folder</strong>. 
 
 
 ### Calibration steps
