@@ -29,10 +29,11 @@ pip install -e  .
 2. Aruco marker videos 
 Aruco markers are used as global landmarks for the world frame registration. The center of the markers are used for registration. User must provide ground truth 3d coordinates in the calibration config file. Collect short video of aruco markers.
 3. Create a config file for calibration. Example config file is provided in example folder. 
-4. Initial estimation of the cameras are required due to many local minimum in multiview bundle adjustment. Future work will use two-view geometry to remove this constraint. Please put the folder that contains camera initial parameter estimation in the same folder as config file. Example provided in the example folder.  
+4. Initial estimation of the cameras are required due to many local minimum in multiview bundle adjustment. Future work will use two-view geometry to remove this constraint. Please put the folder that contains camera initial parameter estimation in the same folder as config file. <strong>Example provided in the example folder</strong>.  
 
 ### Calibration steps
-Assuming the config.json is in the folder /media/user/data0/laser_calib_2024_05_02_tutorial/calib/results/calibration_rig/
+
+Assume the `config.json` in folder `/media/user/data0/laser_calib_2024_05_02_tutorial/calib/results/calibration_rig/`
 
 In the script folder, run 
 1. Extract laser points
