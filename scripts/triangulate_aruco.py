@@ -17,6 +17,8 @@ with open(config_dir + '/config.json', 'r') as f:
 root_dir = calib_config['root_dir']
 side_len = calib_config['aruco_side_length']
 cam_serials = calib_config['cam_serials']
+marker_ids = calib_config['aruco_marker_ids']
+
 cam_names = []
 for cam_serial in cam_serials:
     cam_names.append("Cam" + cam_serial)
@@ -31,9 +33,6 @@ for i in range(n_cams):
     with open(config_dir + "/results/aruco_corners/{}_aruco.pkl".format(cam_names[i]), 'rb') as f:
         one_camera = pkl.load(f)
         aruco_loc.append(one_camera)
-
-# TODO: pass marker ids 
-marker_ids = [0, 1, 2, 3]
 
 # organize data
 features = {}

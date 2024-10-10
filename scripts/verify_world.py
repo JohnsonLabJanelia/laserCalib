@@ -22,6 +22,7 @@ for cam_serial in cam_serials:
     cam_names.append("Cam" + cam_serial)
 n_cams = len(cam_names)
 side_len = calib_config['aruco_side_length']
+marker_ids = calib_config['aruco_marker_ids']
 rig_pts = np.asarray(calib_config['aruco_corners_gt']).transpose()
 
 camList = []

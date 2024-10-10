@@ -55,6 +55,7 @@ python calibrate_camera.py -c /media/user/data0/laser_calib_2024_05_02_tutorial/
 ```
 python run_viewers.py -c /media/user/data0/laser_calib_2024_05_02_tutorial/calib/ -m aruco
 ```
+The aruco markers for detection needs to be from dictionary `DICT_4X4_100`. Please specify the marker ids for detection in the `config.json` file. 
 
 5. triangulate aurco markers
 ```
