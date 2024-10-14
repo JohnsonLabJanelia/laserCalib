@@ -57,55 +57,62 @@ Go to the scripts subdirectory,
 
 ```
 cd scripts 
+export calib_dataset=/nfs/exports/ratlv/calibration/2024_10_08/
 ```
 
 
 1. Extract laser points
 ```
-python detect_laser_points.py -c /media/user/data0/laser_calib_2024_05_02_tutorial/calib/ -i 0
-python detect_laser_points.py -c /media/user/data0/laser_calib_2024_05_02_tutorial/calib/ -i 1
+python detect_laser_points.py -c $calib_dataset -i 0
+python detect_laser_points.py -c $calib_dataset -i 1
 ```
 -i specify the dataset index. Order is specified in the `config.json` file. 
+
+or simply 
+```
+python detect_laser_points.py -c $calib_dataset
+```
+It will run on all the laser datasets listed in the config in sequence. 
 
 
 2. infer 3d points
 ```
-python get_points3d.py -c /media/user/data0/laser_calib_2024_05_02_tutorial/calib/
+python get_points3d.py -c $calib_dataset
 ```
 
 
 3. run calibration
 ```
-python calibrate_camera.py -c /media/user/data0/laser_calib_2024_05_02_tutorial/calib/
+python calibrate_camera.py -c $calib_dataset
 ```
 
 
 4. run viewers to extract aruco markers, press `q` to exit. 
 ```
-python run_viewers.py -c /media/user/data0/laser_calib_2024_05_02_tutorial/calib/ -m aruco
+python run_viewers.py -c $calib_dataset -m aruco
 ```
 The aruco markers for detection needs to be from dictionary `DICT_4X4_100`. Please specify the marker ids for detection in the `config.json` file.
 
 
 5. triangulate aurco markers
 ```
-python triangulate_aruco.py -c /media/user/data0/laser_calib_2024_05_02_tutorial/calib/
+python triangulate_aruco.py -c $calib_dataset
 ```
 
 
 6. register to the world coordinate
 ```
-python register_world.py -c /media/user/data0/laser_calib_2024_05_02_tutorial/calib/
+python register_world.py -c $calib_dataset
 ```
 
 
 7. To check on the results
 ```
-python verify_world.py -c /media/user/data0/laser_calib_2024_05_02_tutorial/calib/
+python verify_world.py -c $calib_dataset
 ```
 
 
-Final results are saved in /media/user/data0/laser_calib_2024_05_02_tutorial/calib/results/calibration_rig/
+Final results are saved in $calib_dataset/results/calibration_rig/
 
 
 

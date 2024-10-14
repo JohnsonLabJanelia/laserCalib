@@ -44,7 +44,7 @@ def extract_laser_points_per_camera(dataset_camera_idx):
     if frame_start != 0:
         vr.set(cv.CAP_PROP_POS_FRAMES, frame_start)
 
-    for i in range(frame_start, frame_end):
+    for i in range(centroids.shape[0]):
         ret, frame = vr.read()
         if not ret:
             break
