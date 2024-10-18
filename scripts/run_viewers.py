@@ -55,6 +55,7 @@ class VideoGet:
         return self
 
     def get(self):
+        counter = 0
         while not self.stopped:
             if not self.grabbed:
                 self.q.put((0, None))
@@ -121,6 +122,10 @@ class VideoGet:
                 frame_small = cv2.resize(frame, (802, 550), interpolation = cv2.INTER_AREA)
                 self.q.put((self.current_frame, frame_small))
 
+                counter = counter + 1
+            
+
+                
     def stop(self):
         # save the corners 
         if self.aruco:
@@ -130,6 +135,7 @@ class VideoGet:
             with open(aruco_marker_folder + "{}_aruco.pkl".format(self.cam_name), 'wb') as f:
                 pkl.dump(self.corner_average, f)
             print("Aruco corner detection saved.")
+        
         self.stopped = True
 
 
@@ -160,7 +166,7 @@ threadpool = []
 for i in range(num_cams):
     if args.mode == "aruco":
         aruco_dataset = calib_config['aruco']
-        video_dir = os.path.join(root_dir + aruco_dataset)
+        video_dir = os.path.join(root_dir , aruco_dataset)
         threadpool.append(VideoGet(video_dir, config_dir, view_queues[i], cam_names[i], laser=False, aruco=True))
     else:
         laser_datasets = calib_config['lasers']

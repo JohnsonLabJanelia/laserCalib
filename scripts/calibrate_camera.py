@@ -62,11 +62,11 @@ for i in range(n_cams):
 sba = PySBA(cameraArray, points_3d, points_2d, camera_ind, point_ind)
 sba_print(sba, n_cams, "Initialization", color_palette=my_palette)
 
-# sba.bundleAdjust_nocam(1e-6)
-# sba_print(sba, n_cams, "Fit 3d Points only", color_palette=my_palette)
+sba.bundleAdjust_nocam(1e-6)
+sba_print(sba, n_cams, "Fit 3d Points only", color_palette=my_palette)
 
-# sba.bundle_adjustment_camonly(1e-4)
-# sba_print(sba, n_cams, "Fit camera parameters only", color_palette=my_palette)
+sba.bundle_adjustment_camonly(1e-4)
+sba_print(sba, n_cams, "Fit camera parameters only", color_palette=my_palette)
 
 sba.bundleAdjust(1e-4)
 sba_print(sba, n_cams, "Fit 3d Points and Camera Paramters", color_palette=my_palette)

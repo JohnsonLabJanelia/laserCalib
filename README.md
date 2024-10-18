@@ -1,5 +1,20 @@
 # laserCalib
 
+## Workflow
+
+0. <input type="checkbox" enabled /> Get initial guess of camera parameters -- see [here](https://github.com/JohnsonLabJanelia/rig_utils/tree/calib_resources/calib_prep)
+
+1. <input type="checkbox" enabled /> Synchronize cameras
+
+2. <input type="checkbox" enabled /> Set gain=XX, exposure=XX
+
+3. <input type="checkbox" enabled /> Record on one flat, horizontal surface (say z = 0)
+
+4. <input type="checkbox" enabled /> Record on another flat, horizontal surface (say z = Z<sub>h</sub>)
+
+5. <input type="checkbox" enabled /> Place the fixed aruco marker at the center and record
+
+
 
 ## Install
 
