@@ -1,6 +1,6 @@
 # laserCalib
 
-## Workflow
+## Workflow for mouse rig
 
 0. <input type="checkbox" enabled /> Get initial guess of camera parameters -- see [here](https://github.com/JohnsonLabJanelia/rig_utils/tree/calib_resources/calib_prep)
 
@@ -12,7 +12,9 @@
 
 4. <input type="checkbox" enabled /> Record on another flat, horizontal surface (say z = Z<sub>h</sub>)
 
-5. <input type="checkbox" enabled /> Place the fixed aruco marker at the center and record
+5. <input type="checkbox" enabled /> Place the fixed aruco marker at the center and record -- make sure to have enough white margin (more than 5cm on each side) -- otherwise the detection finds corners of the white margin
+
+6. <input type="checkbox" enabled /> Run the code as below -- if the reprojection error does not converge, then use the results from an intial run of `calibrate_cameras.py` to initialize the calibration parameters and repeat the steps as needed until reprojection error falls to less than 1px
 
 
 
@@ -109,7 +111,7 @@ python run_viewers.py -c $calib_dataset -m aruco
 The aruco markers for detection needs to be from dictionary `DICT_4X4_100`. Please specify the marker ids for detection in the `config.json` file.
 
 
-5. triangulate aurco markers
+5. triangulate aruco markers
 ```
 python triangulate_aruco.py -c $calib_dataset
 ```
