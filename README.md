@@ -16,7 +16,7 @@
 
 6. <input type="checkbox" enabled /> Run the code as below -- if the reprojection error does not converge, then use the results from an intial run of `calibrate_cameras.py` to initialize the calibration parameters and repeat the steps as needed until reprojection error falls to less than 1px
 
-
+7. Note that how you place the large aruco marker to register the cameras will affect the coordinate system  -- need to stick to a convention as to where the marker will be
 
 ## Install
 
