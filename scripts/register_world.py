@@ -20,23 +20,45 @@ config_dir = args.config
 with open(config_dir + '/config.json', 'r') as f:
     calib_config = json.load(f)
 
+# names/serials of cameras
 cam_serials = calib_config['cam_serials']
 cam_names = []
 for cam_serial in cam_serials:
     cam_names.append("Cam" + cam_serial)
 n_cams = len(cam_names)
 
+# load the ground truth points
 rig_pts = np.asarray(calib_config['aruco_corners_gt'])
+# print(rig_pts)
+# print(rig_pts.shape)
 
-with open(config_dir + "/results/aruco_center_3d.pkl", "rb") as f:
-    label_dict = pkl.load(f)
+# if only one tag, then use the corner of the single tag
+if rig_pts.shape[0] == 1:
+    with open(config_dir + "/results/aruco_corners_3d.pkl", "rb") as f:
+        label_dict = pkl.load(f)
+    aruco_side_length = int(calib_config['aruco_side_length'])
+    ground_truth_pts = []
+    print(np.array([  0.5, -0.5, 0]) * aruco_side_length)
+    # print(label_dict[0])
+    ground_truth_pts.append(rig_pts[0] + (np.array([  0.5, -0.5, 0])*aruco_side_length))
+    ground_truth_pts.append(rig_pts[0] + (np.array([ -0.5, -0.5, 0])*aruco_side_length))
+    ground_truth_pts.append(rig_pts[0] + (np.array([ -0.5,  0.5, 0])*aruco_side_length))
+    ground_truth_pts.append(rig_pts[0] + (np.array([  0.5,  0.5, 0])*aruco_side_length))
+    rig_pts = np.asarray(ground_truth_pts)
+else:
+    with open(config_dir + "/results/aruco_center_3d.pkl", "rb") as f:
+        label_dict = pkl.load(f)
+    
 
-maker_ids = [0, 1, 2, 3]
+marker_ids = [0]
 label_pts = []
-for mk_idx in maker_ids:
+for mk_idx in marker_ids:
     label_pts.append(label_dict[mk_idx])
-label_pts = np.asarray(label_pts)
+label_pts = np.squeeze(np.asarray(label_pts))
 
+
+# print(np.squeeze(label_pts).shape)
+# print(rig_pts.shape)
 
 scale_reg, R_reg, t_reg, mean_dist_reg = point_set_registration(label_pts, rig_pts, verbose=True)
 transformed_pts = apply_rigid_transform(label_pts, R_reg, t_reg, scale_reg)

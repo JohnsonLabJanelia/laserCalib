@@ -13,9 +13,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-c', '--config', type=str, required=True)
 
 args = parser.parse_args()
+
+# load config file
 config_dir = args.config
 with open(config_dir + '/config.json', 'r') as f:
     calib_config = json.load(f)
+
+# camera serial numbers
 cam_serials = calib_config['cam_serials']
 cam_names = []
 for cam_serial in cam_serials:
@@ -23,7 +27,23 @@ for cam_serial in cam_serials:
 n_cams = len(cam_names)
 side_len = calib_config['aruco_side_length']
 marker_ids = calib_config['aruco_marker_ids']
-rig_pts = np.asarray(calib_config['aruco_corners_gt']).transpose()
+
+rig_pts = np.asarray(calib_config['aruco_corners_gt'])
+
+if rig_pts.shape[0] == 1:
+    with open(config_dir + "/results/aruco_corners_3d.pkl", "rb") as f:
+        label_dict = pkl.load(f)
+    aruco_side_length = int(calib_config['aruco_side_length'])
+    ground_truth_pts = []
+    print(np.array([  0.5, -0.5, 0]) * aruco_side_length)
+    # print(label_dict[0])
+    ground_truth_pts.append(rig_pts[0] + (np.array([  0.5, -0.5, 0])*aruco_side_length))
+    ground_truth_pts.append(rig_pts[0] + (np.array([ -0.5, -0.5, 0])*aruco_side_length))
+    ground_truth_pts.append(rig_pts[0] + (np.array([ -0.5,  0.5, 0])*aruco_side_length))
+    ground_truth_pts.append(rig_pts[0] + (np.array([  0.5,  0.5, 0])*aruco_side_length))
+    rig_pts = np.asarray(ground_truth_pts)
+
+rig_pts = rig_pts.transpose()
 
 camList = []
 for i in range(n_cams):
@@ -44,9 +64,9 @@ for i in range(n_cams):
         aruco_loc.append(one_camera)
 
 # TODO: pass marker ids 
-marker_ids = [0, 1, 2, 3]
+marker_ids = [0]
 
-# organize data
+# organize 2d tracking results
 features = {}
 for mk_idx in marker_ids:
     # organize marker features
@@ -71,6 +91,7 @@ for mk_idx in features.keys():
         undistorted_pts.append(ideal_points)
     features[mk_idx]['pts_undistorted'] = np.asarray(undistorted_pts)
 
+# triangulate 3d points of the corners of each marker
 features_3d = {} 
 for mk_idx in features.keys():
     features_3d_per_marker = []
@@ -152,7 +173,7 @@ scale_factor = side_len/np.mean(pts)
 print("Ratio of real to estimated side length of aruco marker: ", scale_factor)
 features_center_3d['scale_factor'] = scale_factor
 
-maker_ids = [0, 1, 2, 3]
+maker_ids = [0]
 label_pts = []
 for mk_idx in maker_ids:
     label_pts.append(features_center_3d[mk_idx])
@@ -169,7 +190,9 @@ ax[0].scatter(input_pts[0,:], input_pts[1,:], input_pts[2,:], c='b', label='reco
 ax[0].scatter(target_pts[0,:], target_pts[1,:], target_pts[2,:], c='r', label='groud truth')
 ax[0].legend()
 
-for i in range(4):
+
+print("input_pts: ", input_pts)
+for i in range(input_pts.shape[1]):
     x = [input_pts[0,i], target_pts[0,i]]
     y = [input_pts[1,i], target_pts[1,i]]
     z = [input_pts[2,i], target_pts[2,i]]
