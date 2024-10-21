@@ -10,6 +10,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-c', '--config', type=str, required=True)
 
 args = parser.parse_args()
+
+# read config file
 config_dir = args.config
 with open(config_dir + '/config.json', 'r') as f:
     calib_config = json.load(f)
@@ -19,37 +21,40 @@ side_len = calib_config['aruco_side_length']
 cam_serials = calib_config['cam_serials']
 marker_ids = calib_config['aruco_marker_ids']
 
+# camera serial numbers
 cam_names = []
 for cam_serial in cam_serials:
     cam_names.append("Cam" + cam_serial)
 n_cams = len(cam_names)
 print("Number of cameras: ", n_cams)
 
+# load calibration results
 with open(config_dir + "/results/calibration.pkl", "rb") as f:
     camList = pkl.load(f)
 
-aruco_loc = []
+# load aruco 2d tracking results
+aruco_loc2d = []
 for i in range(n_cams):
     with open(config_dir + "/results/aruco_corners/{}_aruco.pkl".format(cam_names[i]), 'rb') as f:
         one_camera = pkl.load(f)
-        aruco_loc.append(one_camera)
+        aruco_loc2d.append(one_camera)
 
-# organize data
+# organize 2d tracking results
 features = {}
 for mk_idx in marker_ids:
     # organize marker features
     pts_list = []
     cam_id_list = []
     for cam_idx in range(n_cams):
-        if mk_idx in aruco_loc[cam_idx].keys():
-            pts_list.append(aruco_loc[cam_idx][mk_idx])
+        if mk_idx in aruco_loc2d[cam_idx].keys():
+            pts_list.append(aruco_loc2d[cam_idx][mk_idx])
             cam_id_list.append(cam_idx)
     pts_list = np.asarray(pts_list)
     cam_id_list = np.asarray(cam_id_list)
     dict_per_marker = {'pts': pts_list, 'cam_ids': cam_id_list}
     features[mk_idx] = dict_per_marker
 
-
+# undistort the 2d points?
 for mk_idx in features.keys():
     undistorted_pts = []
     for idx in range(len(features[mk_idx]['cam_ids'])):
@@ -61,6 +66,7 @@ for mk_idx in features.keys():
         undistorted_pts.append(ideal_points)
     features[mk_idx]['pts_undistorted'] = np.asarray(undistorted_pts)
 
+# triangulate 3d points of the corners of each marker
 features_3d = {} 
 for mk_idx in features.keys():
     features_3d_per_marker = []
@@ -93,13 +99,17 @@ for mk_idx in features.keys():
     features_3d[mk_idx] = np.asarray(features_3d_per_marker)
 
 
-features_center_3d = {}
+# triangulate 3d points of the centers of each marker
+features_center_3d = {}  
 for mk_idx in features.keys():
     features_3d_center_per_marker = []
     undistorted_pts = features[mk_idx]['pts_undistorted']
     camera_list = features[mk_idx]['cam_ids']
     num_views = undistorted_pts.shape[0]
+    
     pts_center = undistorted_pts.mean(axis=1)
+    pts_corner = undistorted_pts
+    
     A = np.zeros([num_views*2, 4])
     for idx in range(num_views):
         cam_idx = camera_list[idx]
@@ -120,11 +130,17 @@ for mk_idx in features.keys():
     X = X[:3]
     features_center_3d[mk_idx] = X
 
-print("Marker ID: center coordinats:")
-pp = pprint.PrettyPrinter(depth=4)
-pp.pprint(features_center_3d)
-print("Marker ID: corner coordinats:")
-pp.pprint(features_3d)
+if(len(marker_ids) > 1):
+    print("Marker ID: center coordinats:")
+    pp = pprint.PrettyPrinter(depth=4)
+    pp.pprint(features_center_3d)
+    print("Marker ID: corner coordinats:")
+    pp.pprint(features_3d)
+
+else:
+    pp = pprint.PrettyPrinter(depth=4)
+    print("Marker ID: corner coordinats:")
+    pp.pprint(features_3d_per_marker)
 
 delta_pts = []
 for mk_idx in features_3d.keys():
@@ -140,9 +156,13 @@ for pt in delta_pts:
 
 scale_factor = side_len/np.mean(pts)
 print("Ratio of real to estimated side length of aruco marker: ", scale_factor)
+
+features_3d['scale_factor'] = scale_factor
 with open(config_dir + "/results/aruco_corners_3d.pkl", 'wb') as f:
     pkl.dump(features_3d, f)
+print("saved corner 3d points to: ", config_dir + "/results/aruco_corners_3d.pkl")
 
 features_center_3d['scale_factor'] = scale_factor
 with open(config_dir + "/results/aruco_center_3d.pkl", 'wb') as f:
     pkl.dump(features_center_3d, f)
+print("saved center 3d points to: ", config_dir + "/results/aruco_center_3d.pkl")
