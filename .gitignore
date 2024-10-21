@@ -135,3 +135,6 @@ data/
 results/
 calibres/
 notebook/
+
+scripts/*.ipynb_checkpoints/*
+scripts/*.virtual_documents/*
