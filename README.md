@@ -1,28 +1,22 @@
 # laserCalib
 
-## Workflow for mouse rig
+`laserCalib` is a python package to calibrate mulitple, synchronized cameras. We estimate intrinsics and extrinsics for all the cameras using sparse bundle adjustment.
 
-0. <input type="checkbox" enabled /> Get initial guess of camera parameters -- see [here](https://github.com/JohnsonLabJanelia/rig_utils/tree/calib_resources/calib_prep)
+## overview
+Here is a quick overview of steps involved and what the package does:
 
-1. <input type="checkbox" enabled /> Synchronize cameras
-
-2. <input type="checkbox" enabled /> Set gain=XX, exposure=XX
-
-3. <input type="checkbox" enabled /> Record on one flat, horizontal surface (say z = 0)
-
-4. <input type="checkbox" enabled /> Record on another flat, horizontal surface (say z = Z<sub>h</sub>)
-
-5. <input type="checkbox" enabled /> Place the fixed aruco marker at the center and record -- make sure to have enough white margin (more than 5cm on each side) -- otherwise the detection finds corners of the white margin
-
-6. <input type="checkbox" enabled /> Run the code as below -- if the reprojection error does not converge, then use the results from an intial run of `calibrate_cameras.py` to initialize the calibration parameters and repeat the steps as needed until reprojection error falls to less than 1px
-
-7. Note that how you place the large aruco marker to register the cameras will affect the coordinate system  -- need to stick to a convention as to where the marker will be
-
-## Install
+1. setup synchronized recording from multiple cameras 
+2. provide initial estimates of calibration parameters (camera intrinsics and extrinsics) for all cameras
+3. record videos of a moving laser point that is preferably visible in all cameras 
+4. detect the 2d coordinates of the laser point in each frame across all camera views
+5. estimate the 3d coordinates of the laser point using 2d coordinates (from step 4) and initial camera calibration parameters (step 2)
+6. use sparse bundle adjustment to iteratively refine the estimates of camera calibration parameters and 3d laser point coordinates and until they converge to an optimal estimate
+7. register the camera positions and orientations relative to fixed landmarks in the recording arena
 
 
-Use conda to manage python virtual environment
+## install
 
+setup a python virtual environment using conda
 
 ```
 conda create -n lasercalib python=3.9
@@ -35,11 +29,16 @@ conda install -c menpo opencv
 conda install seaborn
 python -m pip install -U prettytable
 ```
-We are using Linux. You will need to install `ffmpeg` on your machine such that the `ffmpeg` command works from the terminal. 
+
+- we use Linux. 
+- you will also need to install `ffmpeg` on your machine such that the `ffmpeg` command works from the terminal. 
 
 
 In laserCalib folder, install this library as a dev package
 ```
+git clone git@github.com:JohnsonLabJanelia/laserCalib.git
+git checkout mouse_rig
+conda activate lasercalib
 pip install -e  .
 ```
 
@@ -65,31 +64,58 @@ pip install -e  .
 
 ### Calibration steps
 
+0. Prepare a directory with recorded videos, initial calibration parameters, and a `config` file 
 
-Assume the `config.json` is in the folder `/media/user/data0/laser_calib_2024_05_02_tutorial/calib/results/calibration_rig/`
+Let's say it is the directory `/home/ro/exp/calib/2024_10_22` and it looks like below: 
 
+```
+.
+├── 2024_10_22_16_32_02            <-- first set of laser video (at z=z1)
+│   ├── Cam2002486_meta.csv
+│   ├── Cam2002486.mp4
+│   ├── ....
+│   ├── Cam2008670_meta.csv
+│   └── Cam2008670.mp4
+├── 2024_10_22_16_35_36           <-- second set of laser video (at z=z2)
+│   ├── Cam2002486_meta.csv
+│   ├── Cam2002486.mp4
+│   ├── ....
+│   ├── Cam2008670_meta.csv
+│   └── Cam2008670.mp4
+├── 2024_10_22_16_43_05           <-- set of aruco marker videos
+│   ├── Cam2002486_meta.csv
+│   ├── Cam2002486.mp4
+│   ├── ....
+│   ├── Cam2008670_meta.csv
+│   └── Cam2008670.mp4
+├── calib_init                    <-- initial camera calibration parameters
+│   ├── Cam2002486.yaml
+│   ├── ....
+│   └── Cam2008670.yaml
+└── config.json                   <-- configuration file
+    
+```
 
-Go to the scripts subdirectory,
-
+Go to the scripts subdirectory in the `lasercalib` package,
 
 ```
 cd scripts 
-export calib_dataset=/nfs/exports/ratlv/calibration/2024_10_08/
+export calib_dataset=/home/ro/exp/calib/2024_10_22
 ```
 
 
-1. Extract laser points
+1. Extract 2d laser points 
 ```
 python detect_laser_points.py -c $calib_dataset -i 0
 python detect_laser_points.py -c $calib_dataset -i 1
 ```
--i specify the dataset index. Order is specified in the `config.json` file. 
+`-i` specifies the dataset index. Order is specified in the `config.json` file. 
 
-or simply 
+to run on all the laser datasets listed in the config in sequence:
+
 ```
 python detect_laser_points.py -c $calib_dataset
 ```
-It will run on all the laser datasets listed in the config in sequence. 
 
 
 2. infer 3d points
@@ -104,11 +130,12 @@ python calibrate_camera.py -c $calib_dataset
 ```
 
 
-4. run viewers to extract aruco markers, press `q` to exit. 
+4. extract aruco markers (landmarks), press `q` to exit. 
 ```
 python run_viewers.py -c $calib_dataset -m aruco
 ```
-The aruco markers for detection needs to be from dictionary `DICT_4X4_100`. Please specify the marker ids for detection in the `config.json` file.
+- Use aruco markers from the dictionary `DICT_4X4_100` -- see TODO for some examples. 
+- specify the marker ids and physical 3d coordinates of the marker centers in the `config.json` file.
 
 
 5. triangulate aruco markers
