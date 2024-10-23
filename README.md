@@ -171,10 +171,8 @@ This is a suitable image. The green laser pointer is the brightest and largest g
 ![suitable_input_image](README_images/suitable_input_image.png) 
 
 
-## Example of calibrated cameras and extracted laser points in world space 
-![laser_points_and_cam_positions](README_images/laser_points_and_cam_positions.png) 
-
-
+## Example of calibrated cameras and their pose in world frame
+![camera_pose_with_frames](README_images/cameras_pose_with_frames.svg)
 ## Reference 
 The library is built on pySBA -- Python Bundle Adjustment library: https://github.com/jahdiel/pySBA 
 
