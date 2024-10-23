@@ -11,7 +11,7 @@ Here is a quick overview of steps involved and what the package does:
 4. detect the 2d coordinates of the laser point in each frame across all camera views
 5. estimate the 3d coordinates of the laser point using 2d coordinates (from step 4) and initial camera calibration parameters (step 2)
 6. use sparse bundle adjustment to iteratively refine the estimates of camera calibration parameters and 3d laser point coordinates and until they converge to an optimal estimate
-7. register the camera positions and orientations relative to fixed landmarks in the recording arena
+7. register the camera positions and orientations relative to fixed landmarks in the recording arena (world coordinates) to get 3d triangulation results in world coordinate origin
 
 
 ## install
