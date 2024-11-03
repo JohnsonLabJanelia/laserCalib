@@ -27,7 +27,7 @@ pip install -e  .
 ```
 
 
-### Collect datasets 
+## Collect datasets 
 1. Laser pointer videos 
 
 
@@ -45,8 +45,10 @@ pip install -e  .
 <strong>Example provided in the example folder</strong>. 
 
 
-### Calibration steps
+## Calibration steps
 
+
+### Initial estimation
 0. Initial estimation of the cameras parameters are crutial for bundle adjustment due to many local minimums in multiview optimization. There are many ways to calibrate a single camera. Here we are using Charuco board which we found works the best for larges images. 
 
 #### Generate charuco pattern
