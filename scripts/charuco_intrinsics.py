@@ -143,7 +143,7 @@ def main():
     board_size = (width, height)
     board = cv.aruco.CharucoBoard(board_size, square_len, marker_len, aruco_dict)
 
-    images = np.array([img_path + f for f in os.listdir(img_path) if f.endswith(".tif") ])
+    images = np.array([img_path + f for f in os.listdir(img_path) if f.endswith(".tiff") ])
 
     all_corners, all_Ids, imsize, objpoints, imgpoints =read_chessboards(images, board, aruco_dict, False)
     ret, mtx, dist, rvecs, tvecs, std_dev_intrisics, std_dev_extrinsics, per_view_errors = calibrate_camera(board, all_corners, all_Ids, imsize, 1700)

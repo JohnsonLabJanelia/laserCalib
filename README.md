@@ -62,7 +62,7 @@ You can scale the image in an image editor before printing. Print the patter as 
 
 
 #### Intrinsics
-Collect ~20 images per camera. It is recommended to cover the field of view of the camera. Here is an [example data](https://hhmionline-my.sharepoint.com/:f:/g/personal/yanj11_hhmi_org1/Ehaps9iLtK9Dk8cw-9TUPzABHXQ3TKLvKY6N2lrdLAYPVA?e=iJlEwj). -sl is the length (mm) for the square, and -ml is the length of the marker. In our case, it is 80 and 40mm respectively. Change it to match your board. 
+Collect ~20 images per camera. It is recommended to cover the field of view of the camera. Here is an [example data](https://hhmionline-my.sharepoint.com/:f:/g/personal/yanj11_hhmi_org1/Ehaps9iLtK9Dk8cw-9TUPzABHXQ3TKLvKY6N2lrdLAYPVA?e=iJlEwj). -sl is the length (mm) for the square, and -ml is the length of the marker. In our case, it is 80 and 40mm respectively. Change it to match your board. The script scans for `.tiff` file in the folder. 
 
 ```
 python charuco_intrinsics.py -i [images_folder] -w 5 -h 7 -sl 80 -ml 40 -d 5 -o [output_folder]
