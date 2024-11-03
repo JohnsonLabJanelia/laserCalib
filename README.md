@@ -53,16 +53,23 @@ pip install -e  .
 
 #### Generate charuco pattern
 
-We use tool from OpenCV to generate charuco patter. Please refer to this page for more details of [`gen_pattern.py`](https://docs.opencv.org/4.x/da/d0d/tutorial_camera_calibration_pattern.html). 
+We use tool from OpenCV to generate charuco patter. Please refer to this page for more details of [`gen_pattern.py`](https://docs.opencv.org/4.x/da/d0d/tutorial_camera_calibration_pattern.html). We have tested many other boards. Charuco board works the best for large images. 
 
 
 `python gen_pattern.py -o charuco_board.svg --rows 7 --columns 5 -T charuco_board --square_size 30 --marker_size 15 -f DICT_5X5_100.json.gz`
 
-You can scale the image in an image editor before printing. Print the patter as a board or tape it to a rigid board. 
+You can skip the generation to use the image directly [here](https://github.com/opencv/opencv/blob/4.x/doc/charuco_board_pattern.png). You can scale the image in an image editor before printing. Print the patter as a board or tape it to a rigid board. 
 
 
 #### Intrinsics
 Collect ~20 images per camera. It is recommended to cover the field of view of the camera. Here is an [example data](https://hhmionline-my.sharepoint.com/:f:/g/personal/yanj11_hhmi_org1/Ehaps9iLtK9Dk8cw-9TUPzABHXQ3TKLvKY6N2lrdLAYPVA?e=iJlEwj). -sl is the length (mm) for the square, and -ml is the length of the marker. In our case, it is 80 and 40mm respectively. Change it to match your board. The script scans for `.tiff` files in the folder. 
+
+In the scripts folder, 
+```
+cd scripts 
+```
+
+Run, 
 
 ```
 python charuco_intrinsics.py -i [images_folder] -w 5 -h 7 -sl 80 -ml 40 -d 5 -o [output_folder]
