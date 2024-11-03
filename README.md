@@ -35,20 +35,50 @@ pip install -e  .
 - Collect laser point videos for two planes. Please also provide the ground truth z-plane in the calibration config file in the world frame. The ground truth z-planes are used for unprojecting 2d point to 3d.
 
 
-2. Collect short videos of aruco markers. Aruco markers are used as global landmarks for the world frame registration. The center of the markers are used for registration. Users must provide ground truth 3d coordinates in the calibration config file. .
+2. Collect short videos of aruco markers. Aruco markers are used as global landmarks for the world frame registration. The center of the markers are used for registration. Users must provide ground truth 3d coordinates in the calibration config file.
 
 
 3. Create a config file for calibration. Example config file is provided in the example folder.
-
-
-4. Initial estimation of the cameras are required due to many local minimums in multiview bundle adjustment. Future work will use two-view geometry to remove this constraint. Please put the folder that contains camera initial parameter estimation in the same folder as the config file. 
+ 
+4. If you are calibrating for the first time, please collect ~20 images of charuco board per camera to get a good initial estimation of camera parameters. Please refer to the next chapter for instructions. 
 
 <strong>Example provided in the example folder</strong>. 
 
 
 ### Calibration steps
 
+0. Initial estimation of the cameras parameters are crutial for bundle adjustment due to many local minimums in multiview optimization. There are many ways to calibrate a single camera. Here we are using Charuco board which we found works the best for larges images. 
 
+#### Generate charuco pattern
+
+We use tool from OpenCV to generate charuco patter. Please refer to this page for more details of [`gen_pattern.py`](https://docs.opencv.org/4.x/da/d0d/tutorial_camera_calibration_pattern.html). 
+
+
+`python gen_pattern.py -o charuco_board.svg --rows 7 --columns 5 -T charuco_board --square_size 30 --marker_size 15 -f DICT_5X5_100.json.gz`
+
+You can scale the image in an image editor before printing. Print the patter as a board or tape it to a rigid board. 
+
+
+#### Intrinsics
+Collect ~20 images per camera. It is recommended to cover the field of view of the camera. 
+
+```
+python charuco_intrinsics.py -i /nfs/exports/ratlv/prototype/laser_calib_2024_06_20/65mp/65_full_charuco_80_40/ -w 5 -h 7 -sl 80 -ml 40 -d 5 -o /nfs/exports/ratlv/prototype/laser_calib_2024_06_20/65mp/65_full_charuco_80_40/output/
+```
+
+The output is a yaml file with camera intrinsics. This output is used for the next step of estimating extrinsics. 
+
+#### Extrinsics
+Collect 1 image where the charuco board is placed at the world center, aligned with world coordinates. 
+
+```
+python charuco_extrinsics.py -i /nfs/exports/ratlv/prototype/laser_calib_2024_06_20/65mp/65_full_charuco_80_40/Cam2005322_image100.tif -w 5 -h 7 -sl 80 -ml 40 -d 5 -c /nfs/exports/ratlv/prototype/laser_calib_2024_06_20/65mp/65_full_charuco_80_40/output/65_full_charuco_80_40.yaml
+```
+
+The output is a yaml file contains both the intrinsics and extrinsics estimated using Charuco board. Please put the folder that contains camera initial parameter estimation in the same folder as the config file. 
+
+
+### Bundle adjustment
 Assume the `config.json` is in the folder `/media/user/data0/laser_calib_2024_05_02_tutorial/calib/results/calibration_rig/`
 
 
