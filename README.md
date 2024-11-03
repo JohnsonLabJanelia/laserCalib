@@ -58,7 +58,7 @@ We use tool from OpenCV to generate charuco patter. Please refer to this page fo
 
 `python gen_pattern.py -o charuco_board.svg --rows 7 --columns 5 -T charuco_board --square_size 30 --marker_size 15 -f DICT_5X5_100.json.gz`
 
-You can skip the generation to use the image directly [here](https://github.com/opencv/opencv/blob/4.x/doc/charuco_board_pattern.png). You can scale the image in an image editor before printing. Print the patter as a board or tape it to a rigid board. 
+You can skip the generation and use this image directly [here](https://github.com/opencv/opencv/blob/4.x/doc/charuco_board_pattern.png). One can scale the image in an image editor before printing to fit your camera view. Print the patter as a board or tape it to a rigid board. 
 
 
 #### Intrinsics
