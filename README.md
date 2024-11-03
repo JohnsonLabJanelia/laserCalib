@@ -60,10 +60,10 @@ You can scale the image in an image editor before printing. Print the patter as 
 
 
 #### Intrinsics
-Collect ~20 images per camera. It is recommended to cover the field of view of the camera. 
+Collect ~20 images per camera. It is recommended to cover the field of view of the camera. Here is an [example data](https://hhmionline-my.sharepoint.com/:f:/g/personal/yanj11_hhmi_org1/Ehaps9iLtK9Dk8cw-9TUPzABHXQ3TKLvKY6N2lrdLAYPVA?e=iJlEwj). 
 
 ```
-python charuco_intrinsics.py -i /nfs/exports/ratlv/prototype/laser_calib_2024_06_20/65mp/65_full_charuco_80_40/ -w 5 -h 7 -sl 80 -ml 40 -d 5 -o /nfs/exports/ratlv/prototype/laser_calib_2024_06_20/65mp/65_full_charuco_80_40/output/
+python charuco_intrinsics.py -i [images_folder] -w 5 -h 7 -sl 80 -ml 40 -d 5 -o [output_folder]
 ```
 
 The output is a yaml file with camera intrinsics. This output is used for the next step of estimating extrinsics. 
@@ -72,7 +72,7 @@ The output is a yaml file with camera intrinsics. This output is used for the ne
 Collect 1 image where the charuco board is placed at the world center, aligned with world coordinates. 
 
 ```
-python charuco_extrinsics.py -i /nfs/exports/ratlv/prototype/laser_calib_2024_06_20/65mp/65_full_charuco_80_40/Cam2005322_image100.tif -w 5 -h 7 -sl 80 -ml 40 -d 5 -c /nfs/exports/ratlv/prototype/laser_calib_2024_06_20/65mp/65_full_charuco_80_40/output/65_full_charuco_80_40.yaml
+python charuco_extrinsics.py -i [images_folder]/Cam2005322_world.tif -w 5 -h 7 -sl 80 -ml 40 -d 5 -c [output yaml file from previous step]
 ```
 
 The output is a yaml file contains both the intrinsics and extrinsics estimated using Charuco board. Please put the folder that contains camera initial parameter estimation in the same folder as the config file. 
