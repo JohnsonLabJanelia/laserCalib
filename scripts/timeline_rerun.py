@@ -52,7 +52,7 @@ def load_yaml_file(yaml_cam_name):
 all_calib_dates = [ f.path for f in os.scandir(calibration_dir) if f.is_dir() ]
 all_calib_dates.sort()
 
-rr.init("rerun_example_dna_abacus")
+rr.init("calibration")
 rr.spawn()
 
 rr.set_time_sequence("stable_time", 0)
