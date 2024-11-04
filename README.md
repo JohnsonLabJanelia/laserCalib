@@ -1,5 +1,10 @@
 # laserCalib
 
+A Python library for calibrating multiple syncrhonized cameras
+
+Contact [Jinyao Yan](yanj11@janelia.hhmi.org) if you have questions about the software
+
+
 
 ## Install
 
