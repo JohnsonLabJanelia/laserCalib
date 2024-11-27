@@ -1,22 +1,16 @@
 # laserCalib
 
-`laserCalib` is a python package to calibrate mulitple, synchronized cameras. We estimate intrinsics and extrinsics for all the cameras using sparse bundle adjustment.
+A Python library for calibrating multiple syncrhonized cameras
 
-## overview
-Here is a quick overview of steps involved and what the package does:
-
-1. setup synchronized recording from multiple cameras 
-2. provide initial estimates of calibration parameters (camera intrinsics and extrinsics) for all cameras
-3. record videos of a moving laser point that is preferably visible in all cameras 
-4. detect the 2d coordinates of the laser point in each frame across all camera views
-5. estimate the 3d coordinates of the laser point using 2d coordinates (from step 4) and initial camera calibration parameters (step 2)
-6. use sparse bundle adjustment to iteratively refine the estimates of camera calibration parameters and 3d laser point coordinates and until they converge to an optimal estimate
-7. register the camera positions and orientations relative to fixed landmarks in the recording arena (world coordinates) to get 3d triangulation results in world coordinate origin
+Contact [Jinyao Yan](yanj11@janelia.hhmi.org) if you have questions about the software
 
 
-## install
 
-setup a python virtual environment using conda
+## Install
+
+
+Use conda to manage python virtual environment
+
 
 ```
 conda create -n lasercalib python=3.9
@@ -29,21 +23,16 @@ conda install -c menpo opencv
 conda install seaborn
 python -m pip install -U prettytable
 ```
-
-- we use Linux. 
-- you will also need to install `ffmpeg` on your machine such that the `ffmpeg` command works from the terminal. 
+We are using Linux. You will need to install `ffmpeg` on your machine such that the `ffmpeg` command works from the terminal. 
 
 
 In laserCalib folder, install this library as a dev package
 ```
-git clone git@github.com:JohnsonLabJanelia/laserCalib.git
-git checkout mouse_rig
-conda activate lasercalib
 pip install -e  .
 ```
 
 
-### Collect datasets 
+## Collect datasets 
 1. Laser pointer videos 
 
 
@@ -51,71 +40,83 @@ pip install -e  .
 - Collect laser point videos for two planes. Please also provide the ground truth z-plane in the calibration config file in the world frame. The ground truth z-planes are used for unprojecting 2d point to 3d.
 
 
-2. Collect short videos of aruco markers. Aruco markers are used as global landmarks for the world frame registration. The center of the markers are used for registration. Users must provide ground truth 3d coordinates in the calibration config file. .
+2. Collect short videos of aruco markers. Aruco markers are used as global landmarks for the world frame registration. The center of the markers are used for registration. Users must provide ground truth 3d coordinates in the calibration config file.
 
 
 3. Create a config file for calibration. Example config file is provided in the example folder.
-
-
-4. Initial estimation of the cameras are required due to many local minimums in multiview bundle adjustment. Future work will use two-view geometry to remove this constraint. Please put the folder that contains camera initial parameter estimation in the same folder as the config file. 
+ 
+4. If you are calibrating for the first time, please collect ~20 images of charuco board per camera to get a good initial estimation of camera parameters. Please refer to the next chapter for instructions. 
 
 <strong>Example provided in the example folder</strong>. 
 
 
-### Calibration steps
+## Calibration steps
 
-0. Prepare a directory with recorded videos, initial calibration parameters, and a `config` file 
 
-Let's say it is the directory `/home/ro/exp/calib/2024_10_22` and it looks like below: 
+### Initial estimation
+0. Initial estimation of the cameras parameters are crutial for bundle adjustment due to many local minimums in multiview optimization. There are many ways to calibrate a single camera. Here we are using Charuco board which we found works the best for larges images. 
 
+#### Generate charuco pattern
+
+We use tool from OpenCV to generate charuco patter. Please refer to this page for more details of [`gen_pattern.py`](https://docs.opencv.org/4.x/da/d0d/tutorial_camera_calibration_pattern.html). We have tested many other boards. Charuco board works the best for large images. 
+
+
+`python gen_pattern.py -o charuco_board.svg --rows 7 --columns 5 -T charuco_board --square_size 30 --marker_size 15 -f DICT_5X5_100.json.gz`
+
+You can skip the generation and use this image directly [here](https://github.com/opencv/opencv/blob/4.x/doc/charuco_board_pattern.png). One can scale the image in an image editor before printing to fit your camera view. Print the patter as a board or tape it to a rigid board. 
+
+
+#### Intrinsics
+Collect ~20 images per camera. It is recommended to cover the field of view of the camera. Here is an [example data](https://hhmionline-my.sharepoint.com/:f:/g/personal/yanj11_hhmi_org1/Ehaps9iLtK9Dk8cw-9TUPzABHXQ3TKLvKY6N2lrdLAYPVA?e=iJlEwj). -sl is the length (mm) for the square, and -ml is the length of the marker. In our case, it is 80 and 40mm respectively. Change it to match your board. The script scans for `.tiff` files in the folder. 
+
+In the scripts folder, 
 ```
-.
-├── 2024_10_22_16_32_02            <-- first set of laser video (at z=z1)
-│   ├── Cam2002486_meta.csv
-│   ├── Cam2002486.mp4
-│   ├── ....
-│   ├── Cam2008670_meta.csv
-│   └── Cam2008670.mp4
-├── 2024_10_22_16_35_36           <-- second set of laser video (at z=z2)
-│   ├── Cam2002486_meta.csv
-│   ├── Cam2002486.mp4
-│   ├── ....
-│   ├── Cam2008670_meta.csv
-│   └── Cam2008670.mp4
-├── 2024_10_22_16_43_05           <-- set of aruco marker videos
-│   ├── Cam2002486_meta.csv
-│   ├── Cam2002486.mp4
-│   ├── ....
-│   ├── Cam2008670_meta.csv
-│   └── Cam2008670.mp4
-├── calib_init                    <-- initial camera calibration parameters
-│   ├── Cam2002486.yaml
-│   ├── ....
-│   └── Cam2008670.yaml
-└── config.json                   <-- configuration file
-    
+cd scripts 
 ```
 
-Go to the scripts subdirectory in the `lasercalib` package,
+Run, 
+
+```
+python charuco_intrinsics.py -i [images_folder] -w 5 -h 7 -sl 80 -ml 40 -d 5 -o [output_folder]
+```
+
+The output is a yaml file with camera intrinsics. This output is used for the next step of estimating extrinsics. 
+
+#### Extrinsics
+Collect 1 image where the charuco board is placed at the world center, aligned with world coordinates. 
+
+```
+python charuco_extrinsics.py -i [images_folder]/Cam2005322_world.tiff -w 5 -h 7 -sl 80 -ml 40 -d 5 -c [output yaml file from previous step]
+```
+
+The output is a yaml file contains both the intrinsics and extrinsics estimated using Charuco board. Please put the folder that contains camera initial parameter estimation in the same folder as the config file. 
+
+
+### Bundle adjustment
+Assume the `config.json` is in the folder `/media/user/data0/laser_calib_2024_05_02_tutorial/calib/results/calibration_rig/`
+
+
+Go to the scripts subdirectory,
+
 
 ```
 cd scripts 
-export calib_dataset=/home/ro/exp/calib/2024_10_22
+export calib_dataset=/nfs/exports/ratlv/calibration/2024_10_08/
 ```
 
 
-1. Extract 2d laser points 
+1. Extract laser points
 ```
 python detect_laser_points.py -c $calib_dataset -i 0
 python detect_laser_points.py -c $calib_dataset -i 1
 ```
-`-i` specifies the dataset index. Order is specified in the `config.json` file. 
+-i specify the dataset index. Order is specified in the `config.json` file. 
 
-to run on all the laser datasets listed in the config in sequence:
-
+or simply 
 ```
 python detect_laser_points.py -c $calib_dataset
 ```
+It will run on all the laser datasets listed in the config in sequence. 
 
 
 2. infer 3d points
@@ -130,15 +131,14 @@ python calibrate_camera.py -c $calib_dataset
 ```
 
 
-4. extract aruco markers (landmarks), press `q` to exit. 
+4. run viewers to extract aruco markers, press `q` to exit. 
 ```
 python run_viewers.py -c $calib_dataset -m aruco
 ```
-- Use aruco markers from the dictionary `DICT_4X4_100` -- see TODO for some examples. 
-- specify the marker ids and physical 3d coordinates of the marker centers in the `config.json` file.
+The aruco markers for detection needs to be from dictionary `DICT_4X4_100`. Please specify the marker ids for detection in the `config.json` file.
 
 
-5. triangulate aruco markers
+5. triangulate aurco markers
 ```
 python triangulate_aruco.py -c $calib_dataset
 ```
@@ -155,8 +155,16 @@ python register_world.py -c $calib_dataset
 python verify_world.py -c $calib_dataset
 ```
 
+8. (Optional) To export for use with JARVIS 
 
-Final results are saved in $calib_dataset/results/calibration_rig/
+    This is needed because of a slight difference in how YAMLs are formatted for use with red and JARVIS
+```
+python calib2jarvis.py -c $calib_dataset
+```
+
+Final results are saved in `$calib_dataset/results/calibration_rig/` 
+
+Calibration for jarvis will be saved in `$calib_dataset/results/calibration_jarvis/`
 
 
 
@@ -171,8 +179,10 @@ This is a suitable image. The green laser pointer is the brightest and largest g
 ![suitable_input_image](README_images/suitable_input_image.png) 
 
 
-## Example of calibrated cameras and their pose in world frame
-![camera_pose_with_frames](README_images/cameras_pose_with_frames.svg)
+## Example of calibrated cameras and extracted laser points in world space 
+![laser_points_and_cam_positions](README_images/laser_points_and_cam_positions.png) 
+
+
 ## Reference 
 The library is built on pySBA -- Python Bundle Adjustment library: https://github.com/jahdiel/pySBA 
 
