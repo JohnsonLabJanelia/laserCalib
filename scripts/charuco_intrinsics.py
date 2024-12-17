@@ -14,14 +14,16 @@ def read_chessboards(images, board, aruco_dict, verbose):
     print("POSE ESTIMATION STARTS:")
     all_corners = []
     all_Ids = []
-    decimator = 0
     # SUB PIXEL CORNER DETECTION CRITERION
     criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 200, 0.00001)
-    wait_time = 100
+    wait_time = 200
 
     charuco_detector = cv.aruco.CharucoDetector(board)
     objpoints = []
     imgpoints = []
+
+    frame_0 = cv.imread(images[0])
+    imsize = frame_0.shape[:2]
 
     for im in images:
         print("=> Processing image {0}".format(im))
@@ -33,47 +35,51 @@ def read_chessboards(images, board, aruco_dict, verbose):
             charuco_corners, charuco_ids, marker_corners, marker_ids = (
                 charuco_detector.detectBoard(frame)
             )
-            obj_points, img_points = board.matchImagePoints(
-                charuco_corners, charuco_ids
-            )
 
-            objpoints.append(obj_points)
-            imgpoints.append(img_points)
-
-            # SUB PIXEL DETECTION
-            for corner in corners:
-                cv.cornerSubPix(
-                    gray, corner, winSize=(3, 3), zeroZone=(-1, -1), criteria=criteria
+            if charuco_corners is not None and charuco_ids is not None:
+                obj_points, img_points = board.matchImagePoints(
+                    charuco_corners, charuco_ids
                 )
-            res2 = cv.aruco.interpolateCornersCharuco(corners, ids, gray, board)
-            if (
-                res2[1] is not None
-                and res2[2] is not None
-                and len(res2[1]) > 3
-                and decimator % 1 == 0
-            ):
-                all_corners.append(res2[1])
-                all_Ids.append(res2[2])
 
-                if verbose:
-                    image_copy = np.copy(frame)
+                # SUB PIXEL DETECTION
+                for corner in corners:
+                    cv.cornerSubPix(
+                        gray,
+                        corner,
+                        winSize=(3, 3),
+                        zeroZone=(-1, -1),
+                        criteria=criteria,
+                    )
 
-                    for pts_idx in range(res2[1].shape[0]):
-                        cv.circle(
-                            image_copy,
-                            (int(res2[1][pts_idx, 0, 0]), int(res2[1][pts_idx, 0, 1])),
-                            25,
-                            (255, 0, 255),
-                            -1,
-                        )
-                    image_resize = cv.resize(image_copy, (1604, 1100))
-                    cv.imshow("image", image_resize)
-                    key = cv.waitKey(wait_time)
-                    if key == 27:
-                        break
-        decimator += 1
+                res2 = cv.aruco.interpolateCornersCharuco(corners, ids, gray, board)
+                if res2[1] is not None and res2[2] is not None and len(res2[1]) > 3:
+                    all_corners.append(res2[1])
+                    all_Ids.append(res2[2])
 
-    imsize = gray.shape
+                    objpoints.append(obj_points)
+                    imgpoints.append(img_points)
+
+                    if verbose:
+                        image_copy = np.copy(frame)
+
+                        for pts_idx in range(res2[1].shape[0]):
+                            cv.circle(
+                                image_copy,
+                                (
+                                    int(res2[1][pts_idx, 0, 0]),
+                                    int(res2[1][pts_idx, 0, 1]),
+                                ),
+                                25,
+                                (255, 0, 255),
+                                -1,
+                            )
+                        image_resize = cv.resize(image_copy, (1604, 1100))
+                        cv.imshow("{}".format(im), image_resize)
+                        key = cv.waitKey(wait_time)
+                        if key == ord("q"):
+                            break
+
+    print("=> Number of valid image: {}.".format(len(all_corners)))
     return all_corners, all_Ids, imsize, objpoints, imgpoints
 
 
@@ -211,7 +217,7 @@ def main():
     square_len = args.sl
     marker_len = args.ml
     dict = args.d
-    img_path = os.path.normpath(args.img_path)
+    img_path = os.path.expanduser(os.path.normpath(args.img_path))
 
     # parse camera name
     cam_name = img_path.split("/")[-1]
@@ -233,6 +239,7 @@ def main():
     all_corners, all_Ids, imsize, objpoints, imgpoints = read_chessboards(
         images, board, aruco_dict, True
     )
+
     (
         ret,
         mtx,
