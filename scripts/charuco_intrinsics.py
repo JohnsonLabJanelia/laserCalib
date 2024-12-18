@@ -5,6 +5,7 @@ import argparse
 import sys
 from lasercalib.utils import probe_monotonicity
 import matplotlib.pyplot as plt
+import re
 
 
 def read_chessboards(images, board, aruco_dict, verbose):
@@ -13,7 +14,7 @@ def read_chessboards(images, board, aruco_dict, verbose):
     """
     print("POSE ESTIMATION STARTS:")
     all_corners = []
-    all_Ids = []
+    all_ids = []
     # SUB PIXEL CORNER DETECTION CRITERION
     criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 200, 0.00001)
     wait_time = 200
@@ -24,8 +25,8 @@ def read_chessboards(images, board, aruco_dict, verbose):
 
     frame_0 = cv.imread(images[0])
     imsize = frame_0.shape[:2]
-
-    for im in images:
+    all_im_ids = []
+    for im_idx, im in enumerate(images):
         print("=> Processing image {0}".format(im))
         frame = cv.imread(im)
         gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
@@ -53,8 +54,9 @@ def read_chessboards(images, board, aruco_dict, verbose):
 
                 res2 = cv.aruco.interpolateCornersCharuco(corners, ids, gray, board)
                 if res2[1] is not None and res2[2] is not None and len(res2[1]) > 3:
+                    all_im_ids.append(im_idx)
                     all_corners.append(res2[1])
-                    all_Ids.append(res2[2])
+                    all_ids.append(res2[2])
 
                     objpoints.append(obj_points)
                     imgpoints.append(img_points)
@@ -79,11 +81,11 @@ def read_chessboards(images, board, aruco_dict, verbose):
                         if key == ord("q"):
                             break
 
-    print("=> Number of valid image: {}.".format(len(all_corners)))
-    return all_corners, all_Ids, imsize, objpoints, imgpoints
+    print("=> Number of valid image: {}.".format(len(all_im_ids)))
+    return all_corners, all_ids, imsize, objpoints, imgpoints, all_im_ids
 
 
-def calibrate_camera(board, all_corners, all_Ids, imsize, focal_length_init):
+def calibrate_camera(board, all_corners, all_ids, imsize, focal_length_init):
     """
     Calibrates the camera using the dected corners.
     """
@@ -111,7 +113,7 @@ def calibrate_camera(board, all_corners, all_Ids, imsize, focal_length_init):
         perViewErrors,
     ) = cv.aruco.calibrateCameraCharucoExtended(
         charucoCorners=all_corners,
-        charucoIds=all_Ids,
+        charucoIds=all_ids,
         board=board,
         imageSize=imsize,
         cameraMatrix=cameraMatrixInit,
@@ -234,10 +236,30 @@ def main():
     for f in os.listdir(img_path):
         if f.endswith(".tiff"):
             images.append(os.path.join(img_path, f))
-    images = np.array(images)
 
-    all_corners, all_Ids, imsize, objpoints, imgpoints = read_chessboards(
-        images, board, aruco_dict, True
+    sorted_images = sorted(
+        images, key=lambda x: int(re.search(r"_(\d+)", x.split("/")[-1]).group(1))
+    )
+
+    all_corners, all_ids, imsize, objpoints, imgpoints, all_im_ids = read_chessboards(
+        sorted_images, board, aruco_dict, False
+    )
+
+    # assign a unique id for each image, and each corner
+    landmarks_ids = []
+    landmarks_img_points = []
+    for i in range(len(all_im_ids)):
+        for j in range(len(all_ids[i])):
+            point_unique_id = all_im_ids[i] * (width - 1) * (height - 1) + all_ids[i][j]
+            landmarks_ids.append(np.squeeze(point_unique_id))
+            landmarks_img_points.append(np.squeeze(all_corners[i][j]))
+    landmarks_ids = np.asarray(landmarks_ids)
+    landmarks_img_points = np.asarray(landmarks_img_points)
+
+    np.savez(
+        os.path.join(output_folder, "landmarks.npz"),
+        ids=landmarks_ids,
+        landmarks=landmarks_img_points,
     )
 
     (
@@ -249,7 +271,7 @@ def main():
         std_dev_intrisics,
         std_dev_extrinsics,
         per_view_errors,
-    ) = calibrate_camera(board, all_corners, all_Ids, imsize, 1700)
+    ) = calibrate_camera(board, all_corners, all_ids, imsize, 1700)
 
     # add metrics
     def reprojection_error(mtx, distCoeffs, rvecs, tvecs):
