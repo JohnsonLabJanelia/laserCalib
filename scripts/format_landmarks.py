@@ -2,17 +2,19 @@ import os
 import json
 import numpy as np
 
-root_folder = "/Users/yanj11/data/2024_12_13/three_cams"
-all_cam_folders = os.listdir(root_folder)
-all_cam_folders = [item for item in os.listdir(root_folder) if not item.startswith(".")]
-print(all_cam_folders)
+root_folder = "/Users/yanj11/data/rig5cams"
+
+all_cams = []
+for f in os.listdir(root_folder + "/output/intrinsics"):
+    if f.endswith(".yaml"):
+        all_cams.append(f.split(".")[0])
 
 ## load all landmarks and format it
 landmarks = {}
 
-for cam in all_cam_folders:
-    cam_path = os.path.join(root_folder, cam)
-    landmarks_file = cam_path + "/outputs/landmarks.npz"
+for cam in all_cams:
+    landmarks_file = root_folder + "/output/intrinsics/landmarks_{}.npz".format(cam)
+    print(landmarks_file)
     landmarks_per_cam = np.load(landmarks_file)
     landmarks_per_cam_dict = {
         "ids": landmarks_per_cam["ids"].tolist(),
@@ -62,4 +64,4 @@ def json_write(filename, data):
         print("Unable to write JSON {}".format(filename))
 
 
-json_write("/Users/yanj11/data/2024_12_13/rig_cams3/landmarks.json", landmarks)
+json_write(root_folder + "/landmarks.json", landmarks)

@@ -13,23 +13,10 @@ calibration_dir = args.calibration_dir
 
 serial_to_order = {
     "2002496": 0,
-    "2002483": 1,
     "2002488": 2,
-    "2002480": 3,
     "2002489": 4,
-    "2002485": 5,
     "2002490": 6,
-    "2002492": 7,
-    "2002479": 8,
-    "2002494": 9,
-    "2002495": 10,
-    "2002482": 11,
-    "2002481": 12,
-    "2002491": 13,
-    "2002493": 14,
-    "2002484": 15,
     "710038": 16,
-    "2005322": 17,
 }
 
 
@@ -61,10 +48,7 @@ for serial, order in serial_to_order.items():
     rotation = cam_params["rc_ext"].T
     translation = -np.matmul(rotation, cam_params["tc_ext"][:, 0])
 
-    if order == 17:
-        resolution = [9344, 7000]
-    else:
-        resolution = [3208, 2200]
+    resolution = [3208, 2200]
 
     # rr.log("world/camera/{}_{}".format(order, calib_date), rr.Transform3D(translation=translation, mat3x3=rotation))
     rr.log(

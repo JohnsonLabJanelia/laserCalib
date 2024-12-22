@@ -2,10 +2,9 @@ import cv2 as cv
 import numpy as np
 import os
 import argparse
-import sys
 from lasercalib.utils import probe_monotonicity
 import matplotlib.pyplot as plt
-import re
+import json
 
 
 def read_chessboards(images, board, aruco_dict, verbose):
@@ -85,10 +84,23 @@ def read_chessboards(images, board, aruco_dict, verbose):
     return all_corners, all_ids, imsize, objpoints, imgpoints, all_im_ids
 
 
-def calibrate_camera(board, all_corners, all_ids, imsize, focal_length_init):
+def calibrate_camera(board, all_corners, all_ids, imsize, cam_name):
     """
     Calibrates the camera using the dected corners.
     """
+    flags = 0
+    flags += cv.CALIB_USE_INTRINSIC_GUESS + cv.CALIB_FIX_ASPECT_RATIO
+    # flags += (
+    #     cv.CALIB_USE_INTRINSIC_GUESS
+    #     + cv.CALIB_FIX_ASPECT_RATIO
+    #     + cv.CALIB_RATIONAL_MODEL
+    # )
+
+    if cam_name == "710038":
+        focal_length_init = 1780
+    else:
+        focal_length_init = 2300
+
     cameraMatrixInit = np.array(
         [
             [focal_length_init, 0.0, imsize[1] / 2.0],
@@ -96,12 +108,8 @@ def calibrate_camera(board, all_corners, all_ids, imsize, focal_length_init):
             [0.0, 0.0, 1.0],
         ]
     )
-
     distCoeffsInit = np.zeros((5, 1))
-    # flags = (cv.CALIB_USE_INTRINSIC_GUESS + cv.CALIB_RATIONAL_MODEL + cv.CALIB_FIX_ASPECT_RATIO)
-    # flags = (cv.CALIB_USE_INTRINSIC_GUESS  + cv.CALIB_FIX_ASPECT_RATIO + cv.CALIB_FIX_K3 )
-    flags = 0
-    # flags += cv.CALIB_RATIONAL_MODEL
+
     (
         ret,
         camera_matrix,
@@ -149,100 +157,48 @@ def save_instrinsics_yaml(
     s.release()
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Get camera intrinsics from multiple images.", add_help=False
-    )
-    parser.add_argument(
-        "-H", "--help", help="show help", action="store_true", dest="show_help"
-    )
-    parser.add_argument(
-        "-i",
-        "--images",
-        help="Folder of input images",
-        default="",
-        action="store",
-        dest="img_path",
-    )
-    parser.add_argument(
-        "-w",
-        help="Number of squares in X direction",
-        default="5",
-        action="store",
-        dest="w",
-        type=int,
-    )
-    parser.add_argument(
-        "-h",
-        help="Number of squares in Y direction",
-        default="7",
-        action="store",
-        dest="h",
-        type=int,
-    )
-    parser.add_argument(
-        "-sl",
-        help="Square side length",
-        default="120.0",
-        action="store",
-        dest="sl",
-        type=float,
-    )
-    parser.add_argument(
-        "-ml",
-        help="Marker side length",
-        default="60.0",
-        action="store",
-        dest="ml",
-        type=float,
-    )
-    parser.add_argument(
-        "-d",
-        help="dictionary: DICT_4X4_50=0, DICT_4X4_100=1, DICT_4X4_250=2,  DICT_4X4_1000=3,"
-        "DICT_5X5_50=4, DICT_5X5_100=5, DICT_5X5_250=6, DICT_5X5_1000=7, DICT_6X6_50=8,"
-        "DICT_6X6_100=9, DICT_6X6_250=10, DICT_6X6_1000=11, DICT_7X7_50=12, DICT_7X7_100=13,"
-        "DICT_7X7_250=14, DICT_7X7_1000=15, DICT_ARUCO_ORIGINAL = 16}",
-        default="5",
-        action="store",
-        dest="d",
-        type=int,
-    )
+def json_read(filename):
+    try:
+        with open(os.path.abspath(filename)) as f:
+            data = json.load(f)
+        return data
+    except ValueError:
+        print("Unable to read JSON {}".format(filename))
 
-    args = parser.parse_args()
-    show_help = args.show_help
-    if show_help:
-        parser.print_help()
-        sys.exit()
 
-    width = args.w
-    height = args.h
-    square_len = args.sl
-    marker_len = args.ml
-    dict = args.d
-    img_path = os.path.expanduser(os.path.normpath(args.img_path))
+def main(cam_name, charuco_setup, images, output_folder):
+    """
+    args:
+    charuco_setup: json file
+    images: list of path to images
+    output_folder: path of folder to save results
 
-    # parse camera name
-    cam_name = img_path.split("/")[-1]
-    output_folder = os.path.join(img_path, "outputs")
-    os.makedirs(
-        output_folder, exist_ok=True
-    )  # 'exist_ok=True' prevents an error if the folder already exists
+    charuco_setup fileds:
+    "w", int: Number of squares in X direction
+    "h", int:Number of squares in Y direction
+    "square_side_length", float
+    "marker_side_length", float
+    "dictionary",int:
+        dictionary: DICT_4X4_50=0, DICT_4X4_100=1, DICT_4X4_250=2,  DICT_4X4_1000=3,
+        DICT_5X5_50=4, DICT_5X5_100=5, DICT_5X5_250=6, DICT_5X5_1000=7, DICT_6X6_50=8,
+        DICT_6X6_100=9, DICT_6X6_250=10, DICT_6X6_1000=11, DICT_7X7_50=12, DICT_7X7_100=13,
+        DICT_7X7_250=14, DICT_7X7_1000=15, DICT_ARUCO_ORIGINAL = 16
+    """
+    print("======> Camera: ", cam_name)
+
+    charuco_config = json_read(charuco_setup)
+    width = charuco_config["w"]
+    height = charuco_config["h"]
+    square_len = charuco_config["square_side_length"]
+    marker_len = charuco_config["marker_side_length"]
+    dict = charuco_config["dictionary"]
 
     aruco_dict = cv.aruco.getPredefinedDictionary(dict)
     board_size = (width, height)
     board = cv.aruco.CharucoBoard(board_size, square_len, marker_len, aruco_dict)
 
-    images = []
-    for f in os.listdir(img_path):
-        if f.endswith(".tiff"):
-            images.append(os.path.join(img_path, f))
-
-    sorted_images = sorted(
-        images, key=lambda x: int(re.search(r"_(\d+)", x.split("/")[-1]).group(1))
-    )
-
     all_corners, all_ids, imsize, objpoints, imgpoints, all_im_ids = read_chessboards(
-        sorted_images, board, aruco_dict, False
+        images, board, aruco_dict, False
     )
 
     # assign a unique id for each image, and each corner
@@ -257,7 +213,7 @@ def main():
     landmarks_img_points = np.asarray(landmarks_img_points)
 
     np.savez(
-        os.path.join(output_folder, "landmarks.npz"),
+        os.path.join(output_folder, "landmarks_{}.npz".format(cam_name)),
         ids=landmarks_ids,
         landmarks=landmarks_img_points,
     )
@@ -271,7 +227,7 @@ def main():
         std_dev_intrisics,
         std_dev_extrinsics,
         per_view_errors,
-    ) = calibrate_camera(board, all_corners, all_ids, imsize, 1700)
+    ) = calibrate_camera(board, all_corners, all_ids, imsize, cam_name)
 
     # add metrics
     def reprojection_error(mtx, distCoeffs, rvecs, tvecs):
@@ -340,12 +296,50 @@ def main():
     )
     plt.legend()
     plt.grid()
-    plt.savefig(os.path.join(output_folder, "monotonicity.jpg"), bbox_inches="tight")
+    plt.savefig(
+        os.path.join(output_folder, "monotonicity_{}.jpg".format(cam_name)),
+        bbox_inches="tight",
+    )
 
-    output_file = os.path.join(output_folder, cam_name + ".yaml")
-    print(output_file)
+    output_file = os.path.join(output_folder, "{}.yaml".format(cam_name))
     save_instrinsics_yaml(output_file, imsize[1], imsize[0], mtx, dist)
 
 
-if __name__ == "__main__":
-    main()
+root_folder = "/Users/yanj11/data/rig5cams"
+img_path = "/Users/yanj11/data/2024_12_18"
+output_folder = os.path.join(root_folder, "output/intrinsics")
+
+# parse camera name, could have multiple cameras
+os.makedirs(
+    output_folder, exist_ok=True
+)  # 'exist_ok=True' prevents an error if the folder already exists
+
+images = []
+for f in os.listdir(img_path):
+    if f.endswith(".tiff"):
+        images.append(f)
+
+cam_names = []
+image_names = []
+for image in images:
+    cam_names.append(image.split("_")[0])
+    image_names.append("_".join(image.split("_")[1:]))
+
+cam_names = sorted(np.unique(cam_names).tolist())
+image_names = sorted(np.unique(image_names).tolist())
+
+print(
+    "Number of cameras {}, number of images per camera {}.".format(
+        len(cam_names), len(image_names)
+    )
+)
+
+charuco_setup_file = os.path.join(root_folder, "charuco_setup.json")
+
+for cam in cam_names:
+    images_per_cam = []
+    for image in image_names:
+        image_name = "_".join([cam, image])
+        images_per_cam.append(os.path.join(img_path, image_name))
+
+    main(cam, charuco_setup_file, images_per_cam, output_folder)

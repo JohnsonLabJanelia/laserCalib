@@ -11,6 +11,19 @@ import numpy as np
 import cv2 as cv
 import sys
 from scipy.spatial.transform import Rotation as R
+import os
+import json
+
+
+def json_write(filename, data):
+    try:
+        directory = os.path.dirname(os.path.abspath(filename))
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        with open(os.path.abspath(filename), "w") as f:
+            json.dump(data, f, indent=2)
+    except ValueError:
+        print("Unable to write JSON {}".format(filename))
 
 
 def read_camera_parameters(filename):
@@ -124,6 +137,7 @@ def main():
         action="store",
         dest="cam_param",
     )
+    parser.add_argument("-o", help="Output folder", dest="output_dir")
 
     args = parser.parse_args()
 
@@ -141,6 +155,8 @@ def main():
     img_path = args.img_path
 
     cam_param = args.cam_param
+    output_folder = args.output_dir
+
     cam_matrix = []
     dist_coefficients = []
     if cam_param != "":
@@ -173,9 +189,9 @@ def main():
         charuco_corners, charuco_ids, marker_corners, marker_ids = (
             charuco_detector.detectBoard(image)
         )
-        if not (marker_ids is None) and len(marker_ids) > 0:
+        if (marker_ids is not None) and len(marker_ids) > 0:
             cv.aruco.drawDetectedMarkers(image_copy, marker_corners)
-        if not (charuco_ids is None) and len(charuco_ids) > 0:
+        if (charuco_ids is not None) and len(charuco_ids) > 0:
             cv.aruco.drawDetectedCornersCharuco(
                 image_copy, charuco_corners, charuco_ids
             )
@@ -184,10 +200,25 @@ def main():
                     obj_points, img_points = board.matchImagePoints(
                         charuco_corners, charuco_ids
                     )
-                    temp = np.zeros_like(obj_points)
-                    temp[:, 0, 0] = obj_points[:, 0, 1]
-                    temp[:, 0, 1] = obj_points[:, 0, 0]
-                    obj_points = temp
+                    # temp = np.zeros_like(obj_points)
+                    # temp[:, 0, 0] = obj_points[:, 0, 1]
+                    # temp[:, 0, 1] = obj_points[:, 0, 0]
+                    # obj_points = temp
+
+                    # save object points as global points
+                    global_landmarks_ids = []
+                    global_landmarks_pts = []
+                    for i in range(24):
+                        global_landmarks_ids.append(i)
+                        global_landmarks_pts.append(np.squeeze(obj_points[i]).tolist())
+
+                    landmarks_global_dict = {
+                        "ids": global_landmarks_ids,
+                        "landmarks_global": global_landmarks_pts,
+                    }
+                    json_write(
+                        output_folder + "/landmarks_global.json", landmarks_global_dict
+                    )
 
                     flag, rvec, tvec = cv.solvePnP(
                         obj_points, img_points, cam_matrix, dist_coefficients
@@ -245,7 +276,7 @@ def main():
                     print(error_inst.err)
 
         image_resize = cv.resize(image_copy, (1604, 1100))
-        cv.imshow("out", image_resize)
+        cv.imshow("World Coordinates", image_resize)
         key = cv.waitKey(wait_time)
         if key == 27:
             break

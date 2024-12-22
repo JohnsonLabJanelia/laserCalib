@@ -3,10 +3,12 @@ import cv2 as cv
 import json
 import numpy as np
 
-root_folder = "/Users/yanj11/data/2024_12_13/three_cams"
-all_cam_folders = os.listdir(root_folder)
-all_cam_folders = [item for item in os.listdir(root_folder) if not item.startswith(".")]
-print(all_cam_folders)
+root_folder = "/Users/yanj11/data/rig5cams"
+
+all_cams = []
+for f in os.listdir(root_folder + "/output/intrinsics"):
+    if f.endswith(".yaml"):
+        all_cams.append(f.split(".")[0])
 
 
 ## load all yaml file
@@ -23,9 +25,8 @@ def read_camera_parameters(filename):
 
 
 intrinsics = {}
-for cam in all_cam_folders:
-    cam_path = os.path.join(root_folder, cam)
-    cam_intrinsics_file = cam_path + "/outputs/{}.yaml".format(cam)
+for cam in all_cams:
+    cam_intrinsics_file = root_folder + "/output/intrinsics/{}.yaml".format(cam)
     ret, img_size, cam_matrix, dist_coefficients = read_camera_parameters(
         cam_intrinsics_file
     )
@@ -48,4 +49,4 @@ def json_write(filename, data):
         print("Unable to write JSON {}".format(filename))
 
 
-json_write("/Users/yanj11/data/2024_12_13/rig_cams3/intrinsics.json", intrinsics)
+json_write(root_folder + "/intrinsics.json", intrinsics)

@@ -1,16 +1,13 @@
 import rerun as rr
-from math import tau
 import numpy as np
 import argparse
-import glob
 import cv2
-from scipy.spatial.transform import Rotation as R
 import os
 from datetime import date
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-i', '--calibration_dir', type=str, required=True)
+parser.add_argument("-i", "--calibration_dir", type=str, required=True)
 args = parser.parse_args()
 
 
@@ -33,23 +30,24 @@ serial_to_order = {
     "2002491": 13,
     "2002493": 14,
     "2002484": 15,
-    "710038" : 16
+    "710038": 16,
 }
 
 num_cams = len(serial_to_order)
 cam_list = {}
 
+
 def load_yaml_file(yaml_cam_name):
     cam_params = {}
     fs = cv2.FileStorage(yaml_cam_name, cv2.FILE_STORAGE_READ)
-    cam_params['camera_matrix'] = fs.getNode("camera_matrix").mat()
-    cam_params['distortion_coefficients'] = fs.getNode("distortion_coefficients").mat()
-    cam_params['tc_ext'] = fs.getNode("tc_ext").mat()
-    cam_params['rc_ext'] = fs.getNode("rc_ext").mat()
+    cam_params["camera_matrix"] = fs.getNode("camera_matrix").mat()
+    cam_params["distortion_coefficients"] = fs.getNode("distortion_coefficients").mat()
+    cam_params["tc_ext"] = fs.getNode("tc_ext").mat()
+    cam_params["rc_ext"] = fs.getNode("rc_ext").mat()
     return cam_params
 
 
-all_calib_dates = [ f.path for f in os.scandir(calibration_dir) if f.is_dir() ]
+all_calib_dates = [f.path for f in os.scandir(calibration_dir) if f.is_dir()]
 all_calib_dates.sort()
 
 rr.init("calibration")
@@ -71,28 +69,33 @@ sequence_idx = 0
 for idx, calib_folder in enumerate(all_calib_dates):
     calib_date = calib_folder.split("/")[-1]
 
-    rr.set_time_sequence("stable_time", date_days_relative[idx] * 3) # slowdown 3 times
+    rr.set_time_sequence("stable_time", date_days_relative[idx] * 3)  # slowdown 3 times
 
     for serial, order in serial_to_order.items():
-        ## load yaml file 
-        yaml_file_name = calib_folder + "/results/calibration_rig/Cam{}.yaml".format(serial)
+        ## load yaml file
+        yaml_file_name = calib_folder + "/results/calibration_rig/Cam{}.yaml".format(
+            serial
+        )
         cam_params = load_yaml_file(yaml_file_name)
 
         # compute camera pose
-        rotation = cam_params['rc_ext'].T
-        translation = -np.matmul(rotation, cam_params['tc_ext'][:, 0])    
+        rotation = cam_params["rc_ext"].T
+        translation = -np.matmul(rotation, cam_params["tc_ext"][:, 0])
 
         # rr.log("world/camera/{}_{}".format(order, calib_date), rr.Transform3D(translation=translation, mat3x3=rotation))
-        rr.log("world/camera/{}".format(order), rr.Transform3D(translation=translation, mat3x3=rotation))
+        rr.log(
+            "world/camera/{}".format(order),
+            rr.Transform3D(translation=translation, mat3x3=rotation),
+        )
 
         rr.log(
-                # "world/camera/{}_{}".format(order, calib_date),
-                "world/camera/{}".format(order),
-                rr.Pinhole(
-                    resolution=[3208, 2200],
-                    image_from_camera=cam_params['camera_matrix'],
-                    camera_xyz=rr.ViewCoordinates.RDF,
-                ),
-            )
-        
+            # "world/camera/{}_{}".format(order, calib_date),
+            "world/camera/{}".format(order),
+            rr.Pinhole(
+                resolution=[3208, 2200],
+                image_from_camera=cam_params["camera_matrix"],
+                camera_xyz=rr.ViewCoordinates.RDF,
+            ),
+        )
+
     sequence_idx = sequence_idx + 1
