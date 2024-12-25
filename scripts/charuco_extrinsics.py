@@ -111,21 +111,6 @@ def get_charuco_extrinsics(
                     charuco_corners, charuco_ids
                 )
 
-                # save object points as global points
-                global_landmarks_ids = []
-                global_landmarks_pts = []
-                for i in range(24):
-                    global_landmarks_ids.append(i)
-                    global_landmarks_pts.append(np.squeeze(obj_points[i]).tolist())
-
-                landmarks_global_dict = {
-                    "ids": global_landmarks_ids,
-                    "landmarks_global": global_landmarks_pts,
-                }
-                json_write(
-                    output_folder + "/landmarks_global.json", landmarks_global_dict
-                )
-
                 temp = np.zeros_like(obj_points)
                 temp[:, 0, 0] = obj_points[:, 0, 1]
                 temp[:, 0, 1] = obj_points[:, 0, 0]
@@ -137,9 +122,7 @@ def get_charuco_extrinsics(
                 r = R.from_rotvec(rvec[:, 0])
                 rotation_matrix = r.as_matrix()
 
-                cam_extrinsics_file = root_folder + "/output/extrinsics/{}.yaml".format(
-                    cam_name
-                )
+                cam_extrinsics_file = output_folder + "/{}.yaml".format(cam_name)
                 save_extrinsics_yaml(
                     cam_extrinsics_file,
                     img_size,
@@ -196,10 +179,11 @@ def get_charuco_extrinsics(
 
 root_folder = "/Users/yanj11/data/rig5cams"
 cam_name = "710038"
-camera_intrinsic_file = root_folder + "/output/intrinsics/{}.yaml".format(cam_name)
-
+camera_intrinsic_file = root_folder + "/output/intrinsics/710038.yaml"
 charuco_setup_file = os.path.join(root_folder, "charuco_setup.json")
-img_path = root_folder + "/{}_16_35_55_349.tiff".format(cam_name)
+img_path = "/Users/yanj11/data/2024_12_18_2/710038_16_35_55_349.tiff"
+output_folder = root_folder + "/output/extrinsics"
+os.makedirs(output_folder, exist_ok=True)
 get_charuco_extrinsics(
-    charuco_setup_file, img_path, camera_intrinsic_file, root_folder, cam_name
+    charuco_setup_file, img_path, camera_intrinsic_file, output_folder, cam_name
 )

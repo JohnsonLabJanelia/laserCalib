@@ -5,13 +5,13 @@ import argparse
 from lasercalib.utils import probe_monotonicity
 import matplotlib.pyplot as plt
 import json
+import pickle
 
 
 def read_chessboards(images, board, aruco_dict, verbose):
     """
     Charuco base pose estimation.
     """
-    print("POSE ESTIMATION STARTS:")
     all_corners = []
     all_ids = []
     # SUB PIXEL CORNER DETECTION CRITERION
@@ -25,7 +25,7 @@ def read_chessboards(images, board, aruco_dict, verbose):
     frame_0 = cv.imread(images[0])
     imsize = frame_0.shape[:2]
     all_im_ids = []
-    for im_idx, im in enumerate(images):
+    for im in images:
         print("=> Processing image {0}".format(im))
         frame = cv.imread(im)
         gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
@@ -53,7 +53,8 @@ def read_chessboards(images, board, aruco_dict, verbose):
 
                 res2 = cv.aruco.interpolateCornersCharuco(corners, ids, gray, board)
                 if res2[1] is not None and res2[2] is not None and len(res2[1]) > 3:
-                    all_im_ids.append(im_idx)
+                    im_name = im.split("/")[-1]
+                    all_im_ids.append("_".join(im_name.split("_")[1:]))
                     all_corners.append(res2[1])
                     all_ids.append(res2[2])
 
@@ -184,8 +185,6 @@ def get_charuco_intrinsics(cam_name, charuco_setup, images, output_folder):
         DICT_6X6_100=9, DICT_6X6_250=10, DICT_6X6_1000=11, DICT_7X7_50=12, DICT_7X7_100=13,
         DICT_7X7_250=14, DICT_7X7_1000=15, DICT_ARUCO_ORIGINAL = 16
     """
-    print("======> Camera: ", cam_name)
-
     charuco_config = json_read(charuco_setup)
     width = charuco_config["w"]
     height = charuco_config["h"]
@@ -201,22 +200,15 @@ def get_charuco_intrinsics(cam_name, charuco_setup, images, output_folder):
         images, board, aruco_dict, False
     )
 
-    # assign a unique id for each image, and each corner
-    landmarks_ids = []
-    landmarks_img_points = []
-    for i in range(len(all_im_ids)):
-        for j in range(len(all_ids[i])):
-            point_unique_id = all_im_ids[i] * (width - 1) * (height - 1) + all_ids[i][j]
-            landmarks_ids.append(np.squeeze(point_unique_id))
-            landmarks_img_points.append(np.squeeze(all_corners[i][j]))
-    landmarks_ids = np.asarray(landmarks_ids)
-    landmarks_img_points = np.asarray(landmarks_img_points)
-
-    np.savez(
-        os.path.join(output_folder, "landmarks_{}.npz".format(cam_name)),
-        ids=landmarks_ids,
-        landmarks=landmarks_img_points,
-    )
+    landmark = {}
+    for i, im_id in enumerate(all_im_ids):
+        landmark[im_id] = {
+            "corners": all_corners[i],
+            "ids": all_ids[i],
+            "objpoints": objpoints[i],
+        }
+    with open(output_folder + "/landmarks_{}.pkl".format(cam_name), "wb") as f:
+        pickle.dump(landmark, f)
 
     (
         ret,
@@ -306,13 +298,10 @@ def get_charuco_intrinsics(cam_name, charuco_setup, images, output_folder):
 
 
 root_folder = "/Users/yanj11/data/rig5cams"
-img_path = "/Users/yanj11/data/2024_12_18"
+img_path = "/Users/yanj11/data/2024_12_18_2"
 output_folder = os.path.join(root_folder, "output/intrinsics")
 
-# parse camera name, could have multiple cameras
-os.makedirs(
-    output_folder, exist_ok=True
-)  # 'exist_ok=True' prevents an error if the folder already exists
+os.makedirs(output_folder, exist_ok=True)
 
 images = []
 for f in os.listdir(img_path):
@@ -320,26 +309,17 @@ for f in os.listdir(img_path):
         images.append(f)
 
 cam_names = []
-image_names = []
 for image in images:
     cam_names.append(image.split("_")[0])
-    image_names.append("_".join(image.split("_")[1:]))
-
 cam_names = sorted(np.unique(cam_names).tolist())
-image_names = sorted(np.unique(image_names).tolist())
-
-print(
-    "Number of cameras {}, number of images per camera {}.".format(
-        len(cam_names), len(image_names)
-    )
-)
 
 charuco_setup_file = os.path.join(root_folder, "charuco_setup.json")
-
 for cam in cam_names:
     images_per_cam = []
-    for image in image_names:
-        image_name = "_".join([cam, image])
-        images_per_cam.append(os.path.join(img_path, image_name))
-
+    for image in images:
+        this_image_cam_name = image.split("_")[0]
+        if this_image_cam_name == cam:
+            image_name = "_".join([cam, image])
+            images_per_cam.append(os.path.join(img_path, image))
+    print("=====> Camera: {}, Number of images: {}".format(cam, len(images_per_cam)))
     get_charuco_intrinsics(cam, charuco_setup_file, images_per_cam, output_folder)
