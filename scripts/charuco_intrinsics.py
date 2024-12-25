@@ -166,7 +166,7 @@ def json_read(filename):
         print("Unable to read JSON {}".format(filename))
 
 
-def main(cam_name, charuco_setup, images, output_folder):
+def get_charuco_intrinsics(cam_name, charuco_setup, images, output_folder):
     """
     args:
     charuco_setup: json file
@@ -342,4 +342,4 @@ for cam in cam_names:
         image_name = "_".join([cam, image])
         images_per_cam.append(os.path.join(img_path, image_name))
 
-    main(cam, charuco_setup_file, images_per_cam, output_folder)
+    get_charuco_intrinsics(cam, charuco_setup_file, images_per_cam, output_folder)

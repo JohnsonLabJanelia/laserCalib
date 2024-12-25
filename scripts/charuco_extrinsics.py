@@ -1,15 +1,7 @@
 #!/usr/bin/env python
-
-"""aruco_detect_board_charuco.py
-Usage example:
-python aruco_detect_board_charuco.py -w=5 -h=7 -sl=0.04 -ml=0.02 -d=10 -c=../data/aruco/tutorial_camera_charuco.yml
-                                     -i=../data/aruco/choriginal.jpg
-"""
-
 import argparse
 import numpy as np
 import cv2 as cv
-import sys
 from scipy.spatial.transform import Rotation as R
 import os
 import json
@@ -53,239 +45,161 @@ def save_extrinsics_yaml(
     s.release()
 
 
-def main():
-    # parse command line options
-    parser = argparse.ArgumentParser(
-        description="detect markers and corners of charuco board, estimate pose of charuco"
-        "board",
-        add_help=False,
-    )
-    parser.add_argument(
-        "-H", "--help", help="show help", action="store_true", dest="show_help"
-    )
-    parser.add_argument(
-        "-v",
-        "--video",
-        help="Input from video or image file, if omitted, input comes from camera",
-        default="",
-        action="store",
-        dest="v",
-    )
-    parser.add_argument(
-        "-i",
-        "--image",
-        help="Input from image file",
-        default="",
-        action="store",
-        dest="img_path",
-    )
-    parser.add_argument(
-        "-w",
-        help="Number of squares in X direction",
-        default="5",
-        action="store",
-        dest="w",
-        type=int,
-    )
-    parser.add_argument(
-        "-h",
-        help="Number of squares in Y direction",
-        default="7",
-        action="store",
-        dest="h",
-        type=int,
-    )
-    parser.add_argument(
-        "-sl",
-        help="Square side length",
-        default="1.",
-        action="store",
-        dest="sl",
-        type=float,
-    )
-    parser.add_argument(
-        "-ml",
-        help="Marker side length",
-        default="0.5",
-        action="store",
-        dest="ml",
-        type=float,
-    )
-    parser.add_argument(
-        "-d",
-        help="dictionary: DICT_4X4_50=0, DICT_4X4_100=1, DICT_4X4_250=2,  DICT_4X4_1000=3,"
+def json_read(filename):
+    try:
+        with open(os.path.abspath(filename)) as f:
+            data = json.load(f)
+        return data
+    except ValueError:
+        print("Unable to read JSON {}".format(filename))
+
+
+def get_charuco_extrinsics(
+    charuco_setup, img_path, cam_intrinsic_file, output_folder, cam_name
+):
+    """
+    args:
+    charuco_setup: charuco json file
+    img_path: path to image
+    cam_intrinsic_file: camera_intrinsic
+
+    charuco_setup fields
+    width: Number of squares in X direction
+    height: Number of squares in Y direction
+    square_len: Square side length
+    marker_len: Marker side length
+    dict: dictionary: DICT_4X4_50=0, DICT_4X4_100=1, DICT_4X4_250=2,  DICT_4X4_1000=3,"
         "DICT_5X5_50=4, DICT_5X5_100=5, DICT_5X5_250=6, DICT_5X5_1000=7, DICT_6X6_50=8,"
         "DICT_6X6_100=9, DICT_6X6_250=10, DICT_6X6_1000=11, DICT_7X7_50=12, DICT_7X7_100=13,"
-        "DICT_7X7_250=14, DICT_7X7_1000=15, DICT_ARUCO_ORIGINAL = 16}",
-        default="5",
-        action="store",
-        dest="d",
-        type=int,
-    )
-    parser.add_argument(
-        "-ci",
-        help="Camera id if input doesnt come from video (-v)",
-        default="0",
-        action="store",
-        dest="ci",
-        type=int,
-    )
-    parser.add_argument(
-        "-c",
-        help="Input file with calibrated camera parameters",
-        default="",
-        action="store",
-        dest="cam_param",
-    )
-    parser.add_argument("-o", help="Output folder", dest="output_dir")
-
-    args = parser.parse_args()
-
-    show_help = args.show_help
-    if show_help:
-        parser.print_help()
-        sys.exit()
-    width = args.w
-    height = args.h
-    square_len = args.sl
-    marker_len = args.ml
-    dict = args.d
-    video = args.v
-    camera_id = args.ci
-    img_path = args.img_path
-
-    cam_param = args.cam_param
-    output_folder = args.output_dir
-
+        "DICT_7X7_250=14, DICT_7X7_1000=15, DICT_ARUCO_ORIGINAL = 16
+    """
     cam_matrix = []
     dist_coefficients = []
-    if cam_param != "":
-        _, img_size, cam_matrix, dist_coefficients = read_camera_parameters(cam_param)
+
+    yaml_read_return, img_size, cam_matrix, dist_coefficients = read_camera_parameters(
+        cam_intrinsic_file
+    )
+    if not yaml_read_return:
+        raise ValueError("Can't read camera intrinsics.")
+
+    image = cv.imread(cv.samples.findFile(img_path, False))
+    if image is None:
+        raise ValueError("Error: unable to open video/image source")
+
+    charuco_config = json_read(charuco_setup)
+    width = charuco_config["w"]
+    height = charuco_config["h"]
+    square_len = charuco_config["square_side_length"]
+    marker_len = charuco_config["marker_side_length"]
+    dict = charuco_config["dictionary"]
 
     aruco_dict = cv.aruco.getPredefinedDictionary(dict)
     board_size = (width, height)
     board = cv.aruco.CharucoBoard(board_size, square_len, marker_len, aruco_dict)
     charuco_detector = cv.aruco.CharucoDetector(board)
 
-    image = None
-    input_video = None
-    wait_time = 10
-    if video != "":
-        input_video = cv.VideoCapture(cv.samples.findFileOrKeep(video, False))
-        image = input_video.retrieve()[1] if input_video.grab() else None
-    elif img_path == "":
-        input_video = cv.VideoCapture(camera_id)
-        image = input_video.retrieve()[1] if input_video.grab() else None
-    elif img_path != "":
-        wait_time = 0
-        image = cv.imread(cv.samples.findFile(img_path, False))
+    charuco_corners, charuco_ids, marker_corners, marker_ids = (
+        charuco_detector.detectBoard(image)
+    )
+    if (marker_ids is not None) and len(marker_ids) > 0:
+        cv.aruco.drawDetectedMarkers(image, marker_corners)
+    if (charuco_ids is not None) and len(charuco_ids) > 0:
+        cv.aruco.drawDetectedCornersCharuco(image, charuco_corners, charuco_ids)
+        if len(cam_matrix) > 0 and len(charuco_ids) >= 4:
+            try:
+                obj_points, img_points = board.matchImagePoints(
+                    charuco_corners, charuco_ids
+                )
 
-    if image is None:
-        print("Error: unable to open video/image source")
-        sys.exit(0)
+                # save object points as global points
+                global_landmarks_ids = []
+                global_landmarks_pts = []
+                for i in range(24):
+                    global_landmarks_ids.append(i)
+                    global_landmarks_pts.append(np.squeeze(obj_points[i]).tolist())
 
-    while image is not None:
-        image_copy = np.copy(image)
-        charuco_corners, charuco_ids, marker_corners, marker_ids = (
-            charuco_detector.detectBoard(image)
-        )
-        if (marker_ids is not None) and len(marker_ids) > 0:
-            cv.aruco.drawDetectedMarkers(image_copy, marker_corners)
-        if (charuco_ids is not None) and len(charuco_ids) > 0:
-            cv.aruco.drawDetectedCornersCharuco(
-                image_copy, charuco_corners, charuco_ids
-            )
-            if len(cam_matrix) > 0 and len(charuco_ids) >= 4:
-                try:
-                    obj_points, img_points = board.matchImagePoints(
-                        charuco_corners, charuco_ids
-                    )
-                    # temp = np.zeros_like(obj_points)
-                    # temp[:, 0, 0] = obj_points[:, 0, 1]
-                    # temp[:, 0, 1] = obj_points[:, 0, 0]
-                    # obj_points = temp
+                landmarks_global_dict = {
+                    "ids": global_landmarks_ids,
+                    "landmarks_global": global_landmarks_pts,
+                }
+                json_write(
+                    output_folder + "/landmarks_global.json", landmarks_global_dict
+                )
 
-                    # save object points as global points
-                    global_landmarks_ids = []
-                    global_landmarks_pts = []
-                    for i in range(24):
-                        global_landmarks_ids.append(i)
-                        global_landmarks_pts.append(np.squeeze(obj_points[i]).tolist())
+                temp = np.zeros_like(obj_points)
+                temp[:, 0, 0] = obj_points[:, 0, 1]
+                temp[:, 0, 1] = obj_points[:, 0, 0]
+                obj_points = temp
 
-                    landmarks_global_dict = {
-                        "ids": global_landmarks_ids,
-                        "landmarks_global": global_landmarks_pts,
-                    }
-                    json_write(
-                        output_folder + "/landmarks_global.json", landmarks_global_dict
-                    )
+                flag, rvec, tvec = cv.solvePnP(
+                    obj_points, img_points, cam_matrix, dist_coefficients
+                )
+                r = R.from_rotvec(rvec[:, 0])
+                rotation_matrix = r.as_matrix()
 
-                    flag, rvec, tvec = cv.solvePnP(
-                        obj_points, img_points, cam_matrix, dist_coefficients
-                    )
-                    r = R.from_rotvec(rvec[:, 0])
-                    rotation_matrix = r.as_matrix()
-                    save_extrinsics_yaml(
-                        cam_param,
-                        img_size,
+                cam_extrinsics_file = root_folder + "/output/extrinsics/{}.yaml".format(
+                    cam_name
+                )
+                save_extrinsics_yaml(
+                    cam_extrinsics_file,
+                    img_size,
+                    cam_matrix,
+                    dist_coefficients,
+                    rotation_matrix,
+                    tvec,
+                )
+                if flag:
+                    for pts_idx in range(img_points.shape[0]):
+                        cv.circle(
+                            image,
+                            (
+                                int(img_points[pts_idx, 0, 0]),
+                                int(img_points[pts_idx, 0, 1]),
+                            ),
+                            10,
+                            (255, 0, 255),
+                            -1,
+                        )
+                        cv.putText(
+                            image,
+                            str(pts_idx),
+                            (
+                                int(img_points[pts_idx, 0, 0]),
+                                int(img_points[pts_idx, 0, 1]),
+                            ),
+                            cv.FONT_HERSHEY_SIMPLEX,
+                            1,
+                            (255, 255, 0),
+                            3,
+                            cv.LINE_AA,
+                        )
+                    cv.drawFrameAxes(
+                        image,
                         cam_matrix,
                         dist_coefficients,
                         rotation_matrix,
                         tvec,
+                        length=100,
+                        thickness=15,
                     )
-                    if flag:
-                        for pts_idx in range(img_points.shape[0]):
-                            cv.circle(
-                                image_copy,
-                                (
-                                    int(img_points[pts_idx, 0, 0]),
-                                    int(img_points[pts_idx, 0, 1]),
-                                ),
-                                10,
-                                (255, 0, 255),
-                                -1,
-                            )
-                            cv.putText(
-                                image_copy,
-                                str(pts_idx),
-                                (
-                                    int(img_points[pts_idx, 0, 0]),
-                                    int(img_points[pts_idx, 0, 1]),
-                                ),
-                                cv.FONT_HERSHEY_SIMPLEX,
-                                1,
-                                (255, 255, 0),
-                                3,
-                                cv.LINE_AA,
-                            )
-                        cv.drawFrameAxes(
-                            image_copy,
-                            cam_matrix,
-                            dist_coefficients,
-                            rotation_matrix,
-                            tvec,
-                            length=100,
-                            thickness=15,
-                        )
-                except cv.error as error_inst:
-                    print(
-                        "SolvePnP recognize calibration pattern as non-planar pattern. To process this need to use "
-                        "minimum 6 points. The planar pattern may be mistaken for non-planar if the pattern is "
-                        "deformed or incorrect camera parameters are used."
-                    )
-                    print(error_inst.err)
+            except cv.error as error_inst:
+                print(
+                    "SolvePnP recognize calibration pattern as non-planar pattern. To process this need to use minimum 6 points. The planar pattern may be mistaken for non-planar if the pattern is deformed or incorrect camera parameters are used."
+                )
+                print(error_inst.err)
 
-        image_resize = cv.resize(image_copy, (1604, 1100))
+        image_resize = cv.resize(image, (1604, 1100))
         cv.imshow("World Coordinates", image_resize)
-        key = cv.waitKey(wait_time)
-        if key == 27:
-            break
-        image = (
-            input_video.retrieve()[1]
-            if input_video is not None and input_video.grab()
-            else None
-        )
+        cv.waitKey(0)
+        cv.destroyAllWindows()
 
 
-if __name__ == "__main__":
-    main()
+root_folder = "/Users/yanj11/data/rig5cams"
+cam_name = "710038"
+camera_intrinsic_file = root_folder + "/output/intrinsics/{}.yaml".format(cam_name)
+
+charuco_setup_file = os.path.join(root_folder, "charuco_setup.json")
+img_path = root_folder + "/{}_16_35_55_349.tiff".format(cam_name)
+get_charuco_extrinsics(
+    charuco_setup_file, img_path, camera_intrinsic_file, root_folder, cam_name
+)
