@@ -29,8 +29,8 @@ n_cams = len(cam_names)
 
 camList = []
 
-saveCalibFolder = config_dir + "results/calibration_jarvis."
-# os.makedirs( config_dir + "/results/calibration_jarvis/")
+# saveCalibFolder = config_dir + "results/calibration_jarvis."
+os.makedirs( config_dir + "/results/calibration_jarvis/")
     
 for i in range(n_cams):
     cam_params = {}
