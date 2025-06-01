@@ -8,11 +8,16 @@ import json
 import glob
 import seaborn as sns
 
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument('-c', '--config', type=str, required=True)
+parser.add_argument('-p', '--python', type=int, required=True)
+
 
 args = parser.parse_args()
 config_dir = args.config
+python_tracking = args.python
 
 with open(config_dir + '/config.json', 'r') as f:
     calib_config = json.load(f)
@@ -29,6 +34,36 @@ for cam_serial in cam_serials:
     cam_names.append("Cam" + cam_serial)
 n_cams = len(cam_names)
 print("Number of cameras: ", n_cams)
+print(f"reading from {root_dir}/results/")
+# exit()
+
+
+def load_centroids_from_csv(base_path, dataset_name, cam_names, frame_start, frame_end):
+    import os
+    import numpy as np
+    import pandas as pd
+
+    n_pts = frame_end - frame_start
+    n_cams = len(cam_names)
+    centroids = np.full((n_pts, 2, n_cams), np.nan, dtype=float)
+
+    for camera_idx, cam_name in enumerate(cam_names):
+        csv_path = os.path.join(base_path, "results", dataset_name, f"{cam_name}_centroids.csv")
+        if not os.path.exists(csv_path):
+            print(f"Warning: File {csv_path} not found.")
+            continue
+
+        df = pd.read_csv(csv_path)
+        for _, row in df.iterrows():
+            frame = int(row["frame"]) - frame_start
+            if 0 <= frame < n_pts:
+                x, y = row["x"], row["y"]
+                if not (np.isnan(x) or np.isnan(y)):
+                    centroids[frame, 0, camera_idx] = x
+                    centroids[frame, 1, camera_idx] = y
+
+    return centroids
+
 
 dataset_all = []
 for dataset_idx in range(len(laser_datasets)):
@@ -40,9 +75,13 @@ for dataset_idx in range(len(laser_datasets)):
     centroids[:] = np.nan
 
     for camera_idx, cam_name in enumerate(cam_names):
-        one_centroid_file = config_dir + "/results/{}/{}_centroids.pkl".format(laser_datasets[dataset_idx], cam_names[camera_idx])
-        with open(one_centroid_file, 'rb') as f:
-            centroids[:,:,camera_idx] = pkl.load(f)
+        if(python_tracking):
+            one_centroid_file = config_dir + "/results/{}/{}_centroids.pkl".format(laser_datasets[dataset_idx], cam_names[camera_idx])
+            with open(one_centroid_file, 'rb') as f:
+                centroids[:,:,camera_idx] = pkl.load(f)
+        else:
+            centroids = load_centroids_from_csv(config_dir, laser_datasets[dataset_idx], cam_names, frame_start, frame_end)
+
 
     # flip xy (regionprops orders)
     centroids = np.flip(centroids, axis=1)
@@ -60,7 +99,9 @@ for dataset_idx in range(len(laser_datasets)):
     print("Number of kept points: ", n_in_pts)
     n_obs = np.sum(~np.isnan(in_pts[:,0,:].ravel()))
 
+
     fig, axs = plt.subplots(1, n_cams, sharey=True)
+    print(fig)
     plt.title('2D points found on all cameras')
     for i in range(n_cams):
         colors = np.linspace(0, 1, n_in_pts)

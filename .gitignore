@@ -138,3 +138,5 @@ notebook/
 
 scripts/*.ipynb_checkpoints/*
 scripts/*.virtual_documents/*
+
+c_code/*/targets/*
